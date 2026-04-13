@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Диас — TargetPro</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --v:#8B5CF6;--v2:#A855F7;--v3:#C084FC;
+  --c:#06B6D4;--y:#F59E0B;--y2:#FCD34D;
+  --g:#10B981;--pk:#EC4899;
+  --dark:#07070F;--dark2:#0F0F1E;
+  --tx:#F1F5F9;--tx2:#94A3B8;--tx3:#475569;
+  --brd:rgba(139,92,246,0.22);
+  --card:rgba(255,255,255,0.035);
+}
+html{scroll-behavior:smooth;font-size:16px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  background:var(--dark);color:var(--tx);overflow-x:hidden;line-height:1.65;
+  -webkit-font-smoothing:antialiased}
+
+/* ═══ STICKY NAVBAR ═══ */
+.snav{
+  position:sticky;top:0;z-index:299;
+  background:rgba(7,7,15,0);
+  border-bottom:1px solid transparent;
+  backdrop-filter:blur(0px);-webkit-backdrop-filter:blur(0px);
+  pointer-events:none;opacity:0;transform:translateY(-8px);
+  transition:background .3s,border-color .3s,backdrop-filter .3s,opacity .25s,transform .25s;
+}
+.snav.visible{
+  pointer-events:auto;opacity:1;transform:translateY(0);
+}
+.snav.scrolled{
+  background:rgba(7,7,15,0.94);
+  border-bottom-color:var(--brd);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+}
+.snav-inner{
+  max-width:1100px;margin:0 auto;
+  padding:0 20px;height:52px;
+  display:flex;align-items:center;gap:16px;
+}
+.snav-logo{
+  font-size:15px;font-weight:900;
+  background:linear-gradient(135deg,var(--v3),var(--c));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  text-decoration:none;flex-shrink:0;margin-right:auto;
+}
+.snav-links{
+  display:flex;gap:4px;
+}
+.snav-a{
+  padding:6px 12px;border-radius:50px;
+  font-size:13px;font-weight:600;color:var(--tx2);
+  text-decoration:none;transition:color .2s,background .2s;
+  white-space:nowrap;
+}
+.snav-a:hover,.snav-a:active{color:var(--tx);background:rgba(255,255,255,.07);}
+.snav-a.active{color:#fff;background:rgba(139,92,246,.22);}
+.snav-cta{
+  padding:8px 18px !important;font-size:12px !important;
+  flex-shrink:0;white-space:nowrap;
+}
+@media(max-width:520px){
+  .snav-links{display:none;}
+  .snav-logo{margin-right:0;}
+}
+@media(max-width:360px){
+  .snav-cta{display:none;}
+}
+
+/* ═══ LANG BAR ═══ */
+.lang-bar{
+  display:flex;justify-content:center;
+  padding:10px 16px;background:rgba(7,7,15,0.96);
+  border-bottom:1px solid var(--brd);
+  position:sticky;top:0;z-index:300;
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+}
+.lang-btn{
+  flex:1;max-width:160px;padding:9px 0;font-size:14px;font-weight:700;
+  cursor:pointer;border:1px solid var(--brd);background:transparent;color:var(--tx2);
+  transition:all .2s;
+}
+.lang-btn:first-child{border-radius:50px 0 0 50px;}
+.lang-btn:last-child{border-radius:0 50px 50px 0;border-left:none;}
+.lang-btn.active{background:linear-gradient(135deg,var(--v),var(--pk));color:#fff;border-color:transparent;box-shadow:0 0 20px rgba(139,92,246,.4);}
+
+/* ═══ HERO ═══ */
+.hero{
+  min-height:100svh;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;text-align:center;
+  padding:80px 20px 60px;position:relative;overflow:hidden;
+}
+.hero-grid{position:absolute;inset:0;
+  background:linear-gradient(rgba(139,92,246,.06) 1px,transparent 1px),
+             linear-gradient(90deg,rgba(139,92,246,.06) 1px,transparent 1px);
+  background-size:44px 44px;}
+.glow1{position:absolute;top:-15%;left:-10%;width:min(600px,120vw);height:min(600px,120vw);
+  border-radius:50%;background:radial-gradient(circle,rgba(139,92,246,.2),transparent 65%);}
+.glow2{position:absolute;bottom:-10%;right:-10%;width:min(400px,90vw);height:min(400px,90vw);
+  border-radius:50%;background:radial-gradient(circle,rgba(6,182,212,.15),transparent 65%);}
+.glow3{position:absolute;top:40%;left:50%;transform:translateX(-50%);
+  width:min(350px,80vw);height:min(350px,80vw);border-radius:50%;
+  background:radial-gradient(circle,rgba(236,72,153,.1),transparent 65%);}
+.pts{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.pt{position:absolute;border-radius:50%;animation:ptF linear infinite;}
+@keyframes ptF{from{transform:translateY(110vh);opacity:0}10%{opacity:.8}90%{opacity:.3}to{transform:translateY(-60px);opacity:0}}
+
+.badge-live{
+  display:inline-flex;align-items:center;gap:9px;
+  background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.38);
+  color:#34D399;padding:8px 20px;border-radius:50px;
+  font-size:12px;font-weight:700;margin-bottom:24px;position:relative;
+  letter-spacing:.5px;
+}
+.ldot{width:8px;height:8px;border-radius:50%;background:#10B981;flex-shrink:0;animation:blink 1.5s infinite;}
+@keyframes blink{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(16,185,129,.6)}50%{opacity:.4;box-shadow:0 0 0 5px rgba(16,185,129,0)}}
+
+h1.htitle{
+  font-size:clamp(32px,8vw,76px);font-weight:900;line-height:1.08;
+  max-width:880px;margin-bottom:18px;position:relative;
+  text-shadow:0 0 60px rgba(139,92,246,.25);
+}
+.gt{
+  background:linear-gradient(135deg,#C084FC,#06B6D4,#F59E0B,#EC4899);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-size:300% 300%;animation:gAnim 4s ease infinite;
+}
+@keyframes gAnim{0%{background-position:0 50%}50%{background-position:100% 50%}100%{background-position:0 50%}}
+
+.hero-sub{font-size:clamp(14px,4vw,19px);color:var(--tx2);max-width:600px;margin-bottom:36px;position:relative;}
+.hbtns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;position:relative;width:100%;}
+
+.btn-fire{
+  background:linear-gradient(135deg,var(--v),var(--pk));
+  color:#fff;border:none;padding:15px 32px;border-radius:50px;
+  font-size:clamp(14px,3.5vw,16px);font-weight:800;cursor:pointer;
+  box-shadow:0 0 28px rgba(139,92,246,.45),0 0 56px rgba(236,72,153,.18);
+  transition:transform .2s,box-shadow .2s;position:relative;
+  touch-action:manipulation;
+}
+.btn-fire:hover,.btn-fire:active{transform:scale(1.03);box-shadow:0 0 44px rgba(139,92,246,.65);}
+.btn-ghost{
+  background:transparent;color:var(--tx);
+  border:1px solid rgba(255,255,255,.2);padding:15px 28px;border-radius:50px;
+  font-size:clamp(13px,3.5vw,15px);font-weight:600;cursor:pointer;
+  transition:border-color .2s,background .2s;touch-action:manipulation;
+}
+.btn-ghost:hover,.btn-ghost:active{border-color:var(--v);background:rgba(139,92,246,.1);}
+
+.hstats{
+  display:flex;flex-wrap:wrap;margin-top:52px;position:relative;
+  background:rgba(255,255,255,.03);border:1px solid var(--brd);border-radius:18px;
+  overflow:hidden;width:100%;max-width:640px;
+}
+.hs{padding:18px 12px;text-align:center;flex:1;min-width:110px;}
+.hs+.hs{border-left:1px solid var(--brd);}
+@media(max-width:400px){
+  .hs{min-width:50%;border-left:none !important;}
+  .hs:nth-child(2){border-left:1px solid var(--brd) !important;}
+  .hs:nth-child(3){border-top:1px solid var(--brd);}
+  .hs:nth-child(4){border-top:1px solid var(--brd);border-left:1px solid var(--brd) !important;}
+}
+.hs-n{font-size:clamp(20px,5vw,28px);font-weight:900;
+  background:linear-gradient(135deg,#C084FC,#06B6D4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hs-l{font-size:11px;color:var(--tx3);margin-top:3px;text-transform:uppercase;letter-spacing:.7px;}
+
+/* ═══ SECTIONS ═══ */
+.sec{padding:70px 20px;max-width:1100px;margin:0 auto;}
+.stag{display:block;text-align:center;font-size:11px;font-weight:800;letter-spacing:3px;
+  text-transform:uppercase;background:linear-gradient(135deg,var(--v3),var(--c));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;}
+.stitle{text-align:center;font-size:clamp(24px,5vw,48px);font-weight:900;line-height:1.15;margin-bottom:12px;}
+.ssub{text-align:center;color:var(--tx2);font-size:clamp(13px,3.5vw,16px);max-width:540px;margin:0 auto 44px;}
+
+/* ═══ CARDS ═══ */
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:16px;}
+.gcard{
+  background:var(--card);border:1px solid var(--brd);border-radius:20px;padding:28px 24px;
+  transition:transform .3s,border-color .3s,box-shadow .3s;position:relative;overflow:hidden;
+}
+.gcard::before{content:'';position:absolute;inset:0;border-radius:20px;
+  background:linear-gradient(135deg,rgba(139,92,246,.08),rgba(6,182,212,.04));opacity:0;transition:opacity .3s;}
+.gcard:hover,.gcard:active{transform:translateY(-5px);border-color:rgba(139,92,246,.55);box-shadow:0 16px 48px rgba(139,92,246,.13);}
+.gcard:hover::before,.gcard:active::before{opacity:1;}
+.gcard-icon{width:50px;height:50px;border-radius:14px;margin-bottom:18px;
+  display:flex;align-items:center;justify-content:center;font-size:20px;}
+.ic-v{background:rgba(139,92,246,.2);} .ic-c{background:rgba(6,182,212,.2);}
+.ic-y{background:rgba(245,158,11,.2);} .ic-p{background:rgba(236,72,153,.2);}
+.gcard h3{font-size:clamp(17px,4vw,20px);font-weight:800;margin-bottom:10px;}
+.gcard p{color:var(--tx2);font-size:14px;line-height:1.75;}
+
+
+
+/* ═══ PROGRAM ═══ */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:12px;}
+.mod{
+  background:var(--card);border:1px solid var(--brd);border-radius:16px;
+  padding:22px 20px;display:flex;gap:16px;align-items:flex-start;
+  transition:transform .2s,border-color .2s,box-shadow .2s;
+}
+.mod:hover,.mod:active{transform:translateX(4px);border-color:rgba(139,92,246,.48);box-shadow:0 8px 24px rgba(139,92,246,.1);}
+.mnum{font-size:clamp(36px,8vw,44px);font-weight:900;line-height:1;
+  background:linear-gradient(135deg,rgba(139,92,246,.5),rgba(6,182,212,.5));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;flex-shrink:0;}
+.mod h3{font-size:15px;font-weight:800;margin-bottom:6px;}
+.mod p{color:var(--tx2);font-size:13px;}
+
+/* ═══ RESULTS ═══ */
+.rgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:12px;list-style:none;}
+.ritem{display:flex;gap:13px;align-items:flex-start;
+  background:var(--card);border:1px solid rgba(6,182,212,.18);border-radius:14px;padding:18px 16px;
+  transition:transform .2s,border-color .2s,box-shadow .2s;}
+.ritem:hover,.ritem:active{transform:translateY(-3px);border-color:rgba(6,182,212,.45);box-shadow:0 8px 24px rgba(6,182,212,.1);}
+.rchk{width:28px;height:28px;border-radius:50%;flex-shrink:0;
+  background:rgba(6,182,212,.14);border:1px solid rgba(6,182,212,.38);
+  display:flex;align-items:center;justify-content:center;color:var(--c);font-size:12px;font-weight:800;
+  box-shadow:0 0 10px rgba(6,182,212,.18);}
+.ritem span{font-size:13px;color:var(--tx2);line-height:1.6;}
+.ritem span strong{color:var(--tx);}
+
+/* ═══ AUTHOR ═══ */
+.awrap{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;}
+@media(max-width:640px){.awrap{grid-template-columns:1fr;gap:32px;}}
+.av-outer{display:flex;justify-content:center;position:relative;}
+.av-ring{
+  width:clamp(200px,45vw,280px);height:clamp(200px,45vw,280px);border-radius:50%;
+  background:linear-gradient(135deg,rgba(139,92,246,.28),rgba(6,182,212,.18),rgba(236,72,153,.18));
+  border:2px solid rgba(139,92,246,.4);
+  display:flex;align-items:center;justify-content:center;
+  font-size:clamp(60px,14vw,88px);position:relative;
+  box-shadow:0 0 50px rgba(139,92,246,.28),0 0 100px rgba(6,182,212,.12);
+  animation:avP 3s infinite;
+}
+@keyframes avP{0%,100%{box-shadow:0 0 50px rgba(139,92,246,.28),0 0 100px rgba(6,182,212,.12)}
+  50%{box-shadow:0 0 70px rgba(139,92,246,.48),0 0 120px rgba(6,182,212,.22)}}
+.av-badge{position:absolute;bottom:10px;right:0;
+  background:linear-gradient(135deg,var(--g),#059669);
+  color:#fff;padding:7px 14px;border-radius:50px;font-size:11px;font-weight:800;
+  box-shadow:0 0 18px rgba(16,185,129,.38);}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0;}
+.chip{padding:6px 14px;border-radius:50px;font-size:12px;font-weight:700;border:1px solid;}
+.chip-v{background:rgba(139,92,246,.14);border-color:rgba(139,92,246,.38);color:#C084FC;}
+.chip-c{background:rgba(6,182,212,.1);border-color:rgba(6,182,212,.32);color:#67E8F9;}
+.chip-y{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.32);color:#FCD34D;}
+.chip-p{background:rgba(236,72,153,.1);border-color:rgba(236,72,153,.32);color:#F9A8D4;}
+
+/* ═══ TESTIMONIALS ═══ */
+.tgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px;}
+.tcard{background:var(--card);border:1px solid var(--brd);border-radius:18px;padding:24px 20px;
+  transition:transform .2s,border-color .2s,box-shadow .2s;}
+.tcard:hover,.tcard:active{transform:translateY(-4px);border-color:rgba(139,92,246,.38);box-shadow:0 12px 36px rgba(139,92,246,.1);}
+.stars{color:var(--y);font-size:15px;margin-bottom:12px;text-shadow:0 0 8px rgba(245,158,11,.4);}
+.ttext{color:var(--tx2);font-size:13px;line-height:1.8;margin-bottom:18px;}
+.tauth{display:flex;align-items:center;gap:10px;}
+.tav{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;}
+.tname{font-size:13px;font-weight:700;}
+.trole{font-size:11px;color:var(--tx3);}
+
+/* ═══ PRICING ═══ */
+.pgric{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:18px;align-items:start;}
+.pcard{background:var(--card);border:1px solid var(--brd);border-radius:24px;padding:32px 24px;
+  position:relative;overflow:hidden;transition:transform .3s,box-shadow .3s;}
+.pcard:hover,.pcard:active{transform:translateY(-6px);}
+.pcard.feat{background:linear-gradient(135deg,rgba(139,92,246,.11),rgba(236,72,153,.05));
+  border:2px solid rgba(139,92,246,.65);
+  box-shadow:0 0 50px rgba(139,92,246,.18),0 16px 50px rgba(139,92,246,.12);}
+.fbadge{position:absolute;top:18px;right:18px;
+  background:linear-gradient(135deg,var(--v),var(--pk));color:#fff;font-size:11px;
+  font-weight:800;padding:5px 14px;border-radius:50px;box-shadow:0 0 18px rgba(139,92,246,.45);}
+.pname{font-size:12px;font-weight:800;color:var(--tx3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:9px;}
+.pprice{font-size:clamp(36px,8vw,46px);font-weight:900;margin-bottom:4px;line-height:1;}
+.pprice span{font-size:17px;font-weight:400;color:var(--tx3);}
+.pprice.grad{background:linear-gradient(135deg,#C084FC,#06B6D4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.pdesc{color:var(--tx2);font-size:13px;margin-bottom:22px;padding-bottom:20px;border-bottom:1px solid var(--brd);}
+.pfeat{list-style:none;margin-bottom:28px;}
+.pfeat li{display:flex;align-items:flex-start;gap:9px;font-size:13px;color:var(--tx2);
+  padding:8px 0;border-bottom:1px solid rgba(255,255,255,.035);}
+.fi{color:var(--c);font-size:11px;font-weight:800;flex-shrink:0;margin-top:2px;}
+.pfeat li strong{color:var(--tx);}
+.pbtn{width:100%;padding:14px;border-radius:50px;font-size:14px;font-weight:800;
+  cursor:pointer;border:none;transition:all .2s;touch-action:manipulation;}
+.pbtn.out{background:rgba(255,255,255,.08);color:var(--tx);border:1px solid rgba(255,255,255,.38);}
+.pbtn.out:hover,.pbtn.out:active{border-color:var(--v3);background:rgba(139,92,246,.18);color:#fff;}
+.pbtn.sol{background:linear-gradient(135deg,var(--v),var(--pk));color:#fff;
+  box-shadow:0 0 28px rgba(139,92,246,.38);}
+.pbtn.sol:hover,.pbtn.sol:active{transform:translateY(-2px);box-shadow:0 0 44px rgba(139,92,246,.55);}
+
+/* ═══ FAQ ═══ */
+.flist{max-width:700px;margin:0 auto;}
+.faq{border:1px solid var(--brd);border-radius:14px;margin-bottom:10px;overflow:hidden;
+  background:var(--card);transition:border-color .2s;}
+.faq.open{border-color:rgba(139,92,246,.48);box-shadow:0 0 18px rgba(139,92,246,.08);}
+.fq{display:flex;justify-content:space-between;align-items:center;
+  padding:18px 20px;cursor:pointer;font-size:clamp(13px,3.5vw,15px);font-weight:700;user-select:none;}
+.farr{width:18px;height:18px;color:var(--tx3);transition:transform .3s;flex-shrink:0;}
+.faq.open .farr{transform:rotate(180deg);color:var(--v3);}
+.fa{max-height:0;overflow:hidden;transition:max-height .4s ease,padding .3s;
+  padding:0 20px;color:var(--tx2);font-size:13px;line-height:1.8;}
+.faq.open .fa{max-height:240px;padding:0 20px 18px;}
+
+/* ═══ LEAD FORM ═══ */
+.lfsec{
+  background:linear-gradient(135deg,rgba(139,92,246,.09),rgba(6,182,212,.05),rgba(236,72,153,.05));
+  border:1px solid rgba(139,92,246,.28);border-radius:26px;
+  padding:64px 28px;text-align:center;position:relative;overflow:hidden;
+  max-width:780px;margin:0 auto;box-shadow:0 0 70px rgba(139,92,246,.08);
+}
+.lfglow{position:absolute;inset:0;
+  background:radial-gradient(ellipse 70% 60% at 50% 50%,rgba(139,92,246,.07),transparent 70%);}
+.fg{display:flex;gap:10px;max-width:480px;margin:0 auto 14px;flex-wrap:wrap;justify-content:center;}
+.finput{
+  flex:1;min-width:min(180px,100%);padding:13px 20px;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);
+  border-radius:50px;color:var(--tx);font-size:15px;outline:none;
+  transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;
+}
+.finput::placeholder{color:var(--tx3);}
+.finput:focus{border-color:rgba(139,92,246,.58);box-shadow:0 0 18px rgba(139,92,246,.18);}
+.fnote{font-size:12px;color:var(--tx3);margin-top:12px;position:relative;}
+.fsuc{display:none;align-items:center;gap:10px;justify-content:center;
+  background:rgba(16,185,129,.09);border:1px solid rgba(16,185,129,.32);
+  border-radius:50px;padding:13px 24px;font-size:14px;color:#34D399;font-weight:700;
+  margin:14px auto 0;max-width:400px;box-shadow:0 0 18px rgba(16,185,129,.15);}
+
+/* ═══ MODAL ═══ */
+.moverlay{
+  display:none;position:fixed;inset:0;z-index:500;
+  background:rgba(4,4,12,.88);
+  align-items:flex-end;justify-content:center;padding:0;
+}
+@media(min-width:600px){.moverlay{align-items:center;padding:20px;}}
+.moverlay.open{display:flex;}
+.modal{
+  background:linear-gradient(160deg,#0D0D22,#121228);
+  border:1px solid rgba(139,92,246,.45);
+  border-radius:26px 26px 0 0;
+  padding:36px 24px 40px;width:100%;max-width:460px;
+  box-shadow:0 -8px 60px rgba(139,92,246,.22);position:relative;
+  animation:slideUp .32s ease;
+  max-height:92svh;overflow-y:auto;
+}
+@media(min-width:600px){.modal{border-radius:26px;animation:popIn .28s ease;}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes popIn{from{opacity:0;transform:scale(.92) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.mpill{width:40px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:0 auto 24px;}
+@media(min-width:600px){.mpill{display:none;}}
+.mclose{position:absolute;top:14px;right:14px;
+  background:rgba(255,255,255,.07);border:none;color:var(--tx2);
+  width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;
+  display:flex;align-items:center;justify-content:center;touch-action:manipulation;}
+.mclose:hover,.mclose:active{background:rgba(255,255,255,.14);color:var(--tx);}
+.modal h2{font-size:clamp(20px,5vw,24px);font-weight:900;margin-bottom:5px;}
+.msub{color:var(--tx2);font-size:13px;margin-bottom:22px;}
+.minput{
+  width:100%;padding:13px 16px;border-radius:12px;margin-bottom:12px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.11);
+  color:var(--tx);font-size:15px;outline:none;
+  transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;
+}
+.minput::placeholder{color:var(--tx3);}
+.minput:focus{border-color:rgba(139,92,246,.55);box-shadow:0 0 16px rgba(139,92,246,.18);}
+.ptag{
+  background:linear-gradient(135deg,rgba(139,92,246,.13),rgba(6,182,212,.08));
+  border:1px solid rgba(139,92,246,.28);border-radius:12px;
+  padding:14px 16px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;
+}
+.ptag span{color:var(--tx2);font-size:13px;}
+.ptag strong{font-size:20px;font-weight:900;
+  background:linear-gradient(135deg,#C084FC,#06B6D4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.methods{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px;}
+.method{padding:10px 6px;text-align:center;border:1px solid var(--brd);border-radius:10px;
+  cursor:pointer;font-size:12px;font-weight:700;color:var(--tx2);
+  transition:all .2s;background:transparent;touch-action:manipulation;}
+.method:hover,.method:active,.method.sel{border-color:rgba(139,92,246,.55);background:rgba(139,92,246,.11);color:#C084FC;}
+.psuc{display:none;flex-direction:column;align-items:center;text-align:center;gap:14px;padding:16px 0;}
+.psuc-icon{width:68px;height:68px;border-radius:50%;
+  background:linear-gradient(135deg,var(--g),#059669);
+  display:flex;align-items:center;justify-content:center;font-size:28px;
+  box-shadow:0 0 36px rgba(16,185,129,.38);animation:popIn .4s ease;}
+
+/* ═══ FOOTER ═══ */
+footer{border-top:1px solid var(--brd);padding:36px 20px;text-align:center;color:var(--tx3);font-size:13px;}
+.flogo{font-size:20px;font-weight:900;margin-bottom:8px;
+  background:linear-gradient(135deg,#C084FC,#06B6D4,#F59E0B);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+
+/* ═══ REVEAL ═══ */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .55s,transform .55s;}
+.reveal.vis{opacity:1;transform:translateY(0);}
+
+/* ═══ VALIDATION ═══ */
+@keyframes errIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+
+/* ═══ SECTION ACCENT ═══ */
+.sec-accent{
+  background:linear-gradient(135deg,rgba(6,182,212,.045),rgba(139,92,246,.035));
+  border-radius:24px;padding:70px 28px;margin-bottom:0;
+}
+
+/* ═══ REVIEW FORM ═══ */
+.rev-form-wrap{
+  max-width:560px;margin:40px auto 0;
+  background:linear-gradient(135deg,rgba(139,92,246,.07),rgba(6,182,212,.04));
+  border:1px solid rgba(139,92,246,.28);
+  border-radius:24px;padding:32px 28px;
+}
+.rev-form-wrap h3{font-size:20px;font-weight:800;margin-bottom:8px;}
+.rev-form-wrap p{color:var(--tx2);font-size:14px;margin-bottom:22px;line-height:1.6;}
+.stars-pick{display:flex;gap:10px;margin-bottom:20px;font-size:32px;cursor:pointer;justify-content:center;}
+.stars-pick span{transition:transform .15s,color .15s;user-select:none;color:rgba(245,158,11,.3);line-height:1;}
+.stars-pick span.on{color:var(--y);text-shadow:0 0 10px rgba(245,158,11,.5);}
+.stars-pick span:hover{transform:scale(1.25);}
+.rev-suc{display:none;align-items:center;gap:10px;justify-content:center;
+  background:rgba(16,185,129,.09);border:1px solid rgba(16,185,129,.32);
+  border-radius:12px;padding:14px 20px;font-size:14px;color:#34D399;font-weight:700;margin-top:14px;}
+
+/* ═══ DYNAMIC REVIEWS ═══ */
+.tgrid-dynamic{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px;margin-bottom:32px;}
+.rev-loading{text-align:center;color:var(--tx3);font-size:13px;padding:20px;}
+.rev-empty{text-align:center;color:var(--tx3);font-size:13px;padding:20px;
+  background:rgba(255,255,255,.02);border:1px dashed var(--brd);border-radius:14px;}
+</style>
+</head>
+<body>
+
+<!-- LANG BAR -->
+<div class="lang-bar">
+  <button class="lang-btn active" id="btn-ru" onclick="setLang('ru')">🇷🇺 Русский</button>
+  <button class="lang-btn" id="btn-kz" onclick="setLang('kz')">🇰🇿 Қазақша</button>
+</div>
+
+<!-- STICKY NAVBAR -->
+<nav class="snav" id="snav">
+  <div class="snav-inner">
+    <a class="snav-logo" href="#top">TargetPro</a>
+    <div class="snav-links">
+      <a class="snav-a" href="#top"     data-ru="Главная"   data-kz="Басты"></a>
+      <a class="snav-a" href="#program" data-ru="Программа" data-kz="Бағдарлама"></a>
+      <a class="snav-a" href="#reviews" data-ru="Отзывы"    data-kz="Пікірлер"></a>
+      <a class="snav-a" href="#pricing" data-ru="Тарифы"    data-kz="Тарифтер"></a>
+    </div>
+    <button class="snav-cta btn-fire" onclick="openLead()" data-ru="Старт" data-kz="Бастау"></button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero" id="top">
+  <div class="hero-grid"></div>
+  <div class="glow1"></div><div class="glow2"></div><div class="glow3"></div>
+  <div class="pts" id="pts"></div>
+
+  <div class="badge-live">
+    <span class="ldot"></span>
+    <span data-ru="Набор открыт — осталось 12 мест" data-kz="Тіркеу ашық — 12 орын қалды"></span>
+  </div>
+
+  <h1 class="htitle">
+    <span data-ru="Стань таргетологом" data-kz="Таргетолог бол"></span><br>
+    <span class="gt" data-ru="с чеком от 300 000 ₸" data-kz="300 000 ₸ чекпен"></span>
+  </h1>
+  <p class="hero-sub" data-ru="50+ уроков по таргету, продажам и упаковке. Диас обучил 2000+ учеников — теперь твоя очередь." data-kz="Таргет, сату және оралым бойынша 50+ сабақ. Диас 2000+ оқушы дайындады — енді сенің кезегің."></p>
+
+  <div class="hbtns">
+    <button class="btn-fire" onclick="openLead()" data-ru="Забрать бесплатный урок" data-kz="Тегін сабақ алу"></button>
+    <button class="btn-ghost" onclick="goto('program')" data-ru="Смотреть программу" data-kz="Бағдарламаны қарау"></button>
+  </div>
+
+  <div class="hstats">
+    <div class="hs"><div class="hs-n">2 000+</div><div class="hs-l" data-ru="учеников" data-kz="оқушы"></div></div>
+    <div class="hs"><div class="hs-n">5 жыл</div><div class="hs-l" data-ru="в таргете" data-kz="таргетте"></div></div>
+    <div class="hs"><div class="hs-n">15 млн</div><div class="hs-l" data-ru="бюджет/мес" data-kz="бюджет/ай"></div></div>
+    <div class="hs"><div class="hs-n">95%</div><div class="hs-l" data-ru="с клиентами" data-kz="клиент табады"></div></div>
+  </div>
+</div>
+
+<!-- FOR WHOM -->
+<section class="sec reveal">
+  <span class="stag" data-ru="ДЛЯ КОГО" data-kz="КІМ ҮШІН"></span>
+  <h2 class="stitle" data-ru="Этот курс точно для тебя" data-kz="Бұл курс дәл сен үшін"></h2>
+  <p class="ssub" data-ru="Неважно с какого уровня — важно куда хочешь прийти" data-kz="Қай деңгейден бастайтының маңызды емес — қайда жетуді қалайтының маңызды"></p>
+  <div class="grid3">
+    <div class="gcard"><div class="gcard-icon ic-v">🚀</div>
+      <h3 data-ru="Новичок с нуля" data-kz="Нөлден бастаушы"></h3>
+      <p data-ru="Никогда не запускал рекламу? Отлично — сразу научишься делать правильно без вредных привычек." data-kz="Ешқашан жарнама іске қосқан жоқсың ба? Тамаша — дұрыс жасауды бірден үйренесің."></p>
+    </div>
+    <div class="gcard"><div class="gcard-icon ic-c">⚡</div>
+      <h3 data-ru="Действующий таргетолог" data-kz="Жұмыс істеп жатқан таргетолог"></h3>
+      <p data-ru="Конкуренция растёт? Прокачай скиллы и выйди на чек от 300к в месяц." data-kz="Бәсекелестік өсуде ме? Дағдыларды прокачай және айына 300к чекке шық."></p>
+    </div>
+    <div class="gcard"><div class="gcard-icon ic-y">💼</div>
+      <h3 data-ru="Бизнес-владелец" data-kz="Бизнес иесі"></h3>
+      <p data-ru="Хочешь сам настраивать рекламу и не сливать бюджет? Разберёшься полностью." data-kz="Өзің жарнама баптап, бюджетті үнемдегің келе ме? Толық түсінесің."></p>
+    </div>
+  </div>
+</section>
+
+
+<!-- PROGRAM -->
+<section class="sec reveal" id="program">
+  <span class="stag" data-ru="ПРОГРАММА" data-kz="БАҒДАРЛАМА"></span>
+  <h2 class="stitle" data-ru="50+ уроков, 10 модулей" data-kz="10 модульде 50+ сабақ"></h2>
+  <p class="ssub" data-ru="Каждый модуль — конкретный навык, который сразу применяешь" data-kz="Әр модуль — бірден қолданатын нақты дағды"></p>
+  <div class="pgrid">
+    <div class="mod"><div class="mnum">01</div><div><h3 data-ru="Основы таргета" data-kz="Таргет негіздері"></h3><p data-ru="Алгоритм, типы кампаний, первый запуск" data-kz="Алгоритм, науқан түрлері, алғашқы іске қосу"></p></div></div>
+    <div class="mod"><div class="mnum">02</div><div><h3 data-ru="Аудитории и анализ" data-kz="Аудитория және талдау"></h3><p data-ru="Look-alike, ретаргет, парсинг, Pixel" data-kz="Look-alike, ретаргет, парсинг, Pixel"></p></div></div>
+    <div class="mod"><div class="mnum">03</div><div><h3 data-ru="Рекламные креативы" data-kz="Жарнамалық креативтер"></h3><p data-ru="Крео которые бьют по CR и не выгорают" data-kz="CR соғатын және жанып кетпейтін крео"></p></div></div>
+    <div class="mod"><div class="mnum">04</div><div><h3 data-ru="Бюджет и масштаб" data-kz="Бюджет және масштаб"></h3><p data-ru="Работа с бюджетами от 100к до 5 млн" data-kz="100к-дан 5 млн-ға дейін бюджеттермен жұмыс"></p></div></div>
+    <div class="mod"><div class="mnum">05</div><div><h3 data-ru="Аналитика и отчёты" data-kz="Аналитика және есептер"></h3><p data-ru="Читаем данные, принимаем решения" data-kz="Деректерді оқимыз, шешім қабылдаймыз"></p></div></div>
+    <div class="mod"><div class="mnum">06</div><div><h3 data-ru="Инфобиз-вертикаль" data-kz="Инфобиз-вертикаль"></h3><p data-ru="Как сливать на курсы с профитом" data-kz="Курстарға профитпен айту"></p></div></div>
+    <div class="mod"><div class="mnum">07</div><div><h3 data-ru="Продажи себя" data-kz="Өзіңді сату"></h3><p data-ru="Клиенты, сделки, высокие чеки" data-kz="Клиенттер, мәмілелер, жоғары чектер"></p></div></div>
+    <div class="mod"><div class="mnum">08</div><div><h3 data-ru="Упаковка профиля" data-kz="Профиль оралымы"></h3><p data-ru="Портфолио, кейсы, договор, оффер" data-kz="Портфолио, кейстер, шарт, оффер"></p></div></div>
+    <div class="mod"><div class="mnum">09</div><div><h3 data-ru="Автоворонки" data-kz="Автовронкалар"></h3><p data-ru="Лид-магниты, бот-воронки, автоматизация" data-kz="Лид-магниттер, бот-вронкалар, автоматизация"></p></div></div>
+    <div class="mod"><div class="mnum">10</div><div><h3 data-ru="Стратегия роста" data-kz="Өсу стратегиясы"></h3><p data-ru="Топ-таргетолог и масштаб дохода" data-kz="Топ-таргетолог және табысты масштабтау"></p></div></div>
+  </div>
+</section>
+
+<!-- RESULTS -->
+<section class="sec sec-accent reveal">
+  <span class="stag" data-ru="РЕЗУЛЬТАТЫ" data-kz="НӘТИЖЕЛЕР"></span>
+  <h2 class="stitle" data-ru="После курса ты умеешь:" data-kz="Курстан кейін сен білесің:"></h2>
+  <p class="ssub" data-ru="Конкретные навыки, за которые хорошо платят" data-kz="Жақсы ақы төленетін нақты дағдылар"></p>
+  <ul class="rgrid">
+    <li class="ritem"><span class="rchk">✓</span><span data-ru="<strong>Работать с крупными бюджетами</strong> — от 100к без страха" data-kz="<strong>Ірі бюджеттермен жұмыс</strong> — 100к-дан қорықпай"></span></li>
+    <li class="ritem"><span class="rchk">✓</span><span data-ru="<strong>Закрывать клиентов</strong> на 300 000 ₸ и выше" data-kz="<strong>Клиенттерді жабу</strong> — 300 000 ₸ және жоғары"></span></li>
+    <li class="ritem"><span class="rchk">✓</span><span data-ru="<strong>Знать Ads Manager</strong> от А до Я" data-kz="<strong>Ads Manager</strong> А-дан Я-ға дейін"></span></li>
+    <li class="ritem"><span class="rchk">✓</span><span data-ru="<strong>Составлять стратегии</strong> — думать системно" data-kz="<strong>Стратегия құру</strong> — жүйелі ойлау"></span></li>
+    <li class="ritem"><span class="rchk">✓</span><span data-ru="<strong>Делать крео</strong> которые продают" data-kz="<strong>Сататын крео</strong> жасау"></span></li>
+    <li class="ritem"><span class="rchk">✓</span><span data-ru="<strong>Анализировать данные</strong> и решать быстро" data-kz="<strong>Деректерді талдау</strong> және шешімді шапшаң қабылдау"></span></li>
+    <li class="ritem"><span class="rchk">✓</span><span data-ru="<strong>Продавать себя</strong> без ощущения навязывания" data-kz="<strong>Өзіңді сату</strong> — сырттан таңбай"></span></li>
+    <li class="ritem"><span class="rchk">✓</span><span data-ru="<strong>Строить автоворонки</strong> — лид-магниты, боты" data-kz="<strong>Автовронка құру</strong> — лид-магниттер мен боттар"></span></li>
+  </ul>
+</section>
+
+<!-- AUTHOR -->
+<section class="sec reveal">
+  <span class="stag" data-ru="АВТОР" data-kz="АВТОР"></span>
+  <div class="awrap">
+    <div class="av-outer">
+      <div class="av-ring">🧑‍💻
+        <div class="av-badge" data-ru="Таргетолог №1" data-kz="Таргетолог №1"></div>
+      </div>
+    </div>
+    <div>
+      <h2 style="font-size:clamp(28px,7vw,40px);font-weight:900;margin-bottom:5px;">Диас</h2>
+      <p style="color:#C084FC;font-size:clamp(14px,3.5vw,17px);font-weight:700;margin-bottom:16px;" data-ru="Таргетолог-натурал • Казахстан" data-kz="Таргетолог-натурал • Қазақстан"></p>
+      <p style="color:var(--tx2);font-size:clamp(13px,3.5vw,15px);line-height:1.85;margin-bottom:20px;"
+        data-ru="5 лет в таргете. Отливаю 15 миллионов тенге в месяц на инфобиз. Обучил 2000+ учеников по всему Казахстану и СНГ."
+        data-kz="Таргетте 5 жыл. Айына 15 миллион теңге инфобизге айтамын. Бүкіл Қазақстан мен ТМД бойынша 2000+ оқушы дайындадым."></p>
+      <div class="chips">
+        <span class="chip chip-v" data-ru="5 лет опыта" data-kz="5 жыл тәжірибе"></span>
+        <span class="chip chip-c" data-ru="2000+ учеников" data-kz="2000+ оқушы"></span>
+        <span class="chip chip-y" data-ru="15 млн / месяц" data-kz="15 млн / ай"></span>
+        <span class="chip chip-p" data-ru="Топ Казахстан" data-kz="Топ Қазақстан"></span>
+      </div>
+      <p style="color:var(--tx2);font-size:13px;line-height:1.8;"
+        data-ru="Никакой воды. Только то, что реально работает — проверено на собственных миллионных бюджетах и сотнях учеников."
+        data-kz="Ешқандай суы жоқ. Тек нақты жұмыс істейтін нәрсе — меңгерілген миллиондық бюджеттерде тексерілген."></p>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="sec reveal" id="reviews">
+  <span class="stag" data-ru="ОТЗЫВЫ" data-kz="ПІКІРЛЕР"></span>
+  <h2 class="stitle" data-ru="Что говорят ученики" data-kz="Оқушылар не дейді"></h2>
+  <p class="ssub" data-ru="Реальные результаты реальных людей" data-kz="Нақты адамдардың нақты нәтижелері"></p>
+
+  <!-- Динамические отзывы из Google Sheets -->
+  <div id="reviews-container">
+    <div class="rev-loading" id="rev-loading">⏳ <span data-ru="Загружаем отзывы..." data-kz="Пікірлер жүктелуде..."></span></div>
+    <div class="tgrid-dynamic" id="reviews-grid" style="display:none;"></div>
+    <div class="rev-empty" id="rev-empty" style="display:none;" data-ru="Отзывов пока нет. Будь первым! 👇" data-kz="Әзірше пікір жоқ. Бірінші бол! 👇"></div>
+  </div>
+
+  <!-- Форма для отзыва -->
+  <div class="rev-form-wrap reveal">
+    <h3 data-ru="✍️ Оставить отзыв" data-kz="✍️ Пікір қалдыру"></h3>
+    <p data-ru="Прошёл курс? Поделись результатом — помоги другим принять решение" data-kz="Курс өттің бе? Нәтижеңмен бөліс — басқаларға шешім қабылдауға көмектес"></p>
+    <div class="stars-pick" id="stars-pick">
+      <span data-v="1">★</span>
+      <span data-v="2">★</span>
+      <span data-v="3">★</span>
+      <span data-v="4">★</span>
+      <span data-v="5">★</span>
+    </div>
+    <input class="minput" id="rv-name" placeholder="Твоё имя" maxlength="60">
+    <textarea class="minput" id="rv-text" placeholder="Твой отзыв..." rows="3" style="resize:vertical;min-height:80px;font-family:inherit;"></textarea>
+    <button class="btn-fire" style="width:100%;margin-top:4px;" onclick="submitReview()" id="rv-btn" data-ru="Отправить отзыв 🚀" data-kz="Пікір жіберу 🚀"></button>
+    <div class="rev-suc" id="rv-suc">✅ <span data-ru="Отзыв отправлен! Появится после проверки." data-kz="Пікір жіберілді! Тексергеннен кейін шығады."></span></div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="sec reveal" id="pricing">
+  <span class="stag" data-ru="ТАРИФЫ" data-kz="ТАРИФТЕР"></span>
+  <h2 class="stitle" data-ru="Выбери свой формат" data-kz="Өз форматыңды таңда"></h2>
+  <p class="ssub" data-ru="Пожизненный доступ + все обновления включены" data-kz="Өмір бойы қол жеткізу + барлық жаңартулар кіреді"></p>
+  <div class="pgric">
+    <div class="pcard">
+      <p class="pname" data-ru="ХОРОШИЙ" data-kz="ЖАҚСЫ"></p>
+      <p class="pprice">19 900 <span>₸</span></p>
+      <p class="pdesc" data-ru="Самостоятельное изучение с обратной связью" data-kz="Кері байланыспен өздігінен оқу"></p>
+      <ul class="pfeat">
+        <li><span class="fi">✓</span><span data-ru="50+ видеоуроков" data-kz="50+ бейне сабақ"></span></li>
+        <li><span class="fi">✓</span><span data-ru="Шаблоны и чеклисты" data-kz="Үлгілер мен тексеру парақтары"></span></li>
+        <li><span class="fi">✓</span><span data-ru="Закрытый Telegram-чат" data-kz="Жабық Telegram-чат"></span></li>
+        <li><span class="fi">✓</span><span data-ru="Проверка 3 домашних заданий" data-kz="3 үй тапсырмасын тексеру"></span></li>
+        <li><span class="fi">✓</span><span data-ru="Сертификат" data-kz="Сертификат"></span></li>
+      </ul>
+      <button class="pbtn sol" onclick="openPay('good')" data-ru="Забронировать место" data-kz="Орын брондау"></button>
+    </div>
+    <div class="pcard feat">
+      <span class="fbadge" data-ru="Топ выбор" data-kz="Топ таңдау"></span>
+      <p class="pname" data-ru="ОТЛИЧНЫЙ" data-kz="КЕРЕМЕТ"></p>
+      <p class="pprice grad">39 900 <span style="-webkit-text-fill-color:var(--tx3);">₸</span></p>
+      <p class="pdesc" data-ru="Максимум практики + живые разборы" data-kz="Максималды тәжірибе + тікелей талдаулар"></p>
+      <ul class="pfeat">
+        <li><span class="fi">✓</span><span data-ru="Всё из тарифа Хороший" data-kz="Жақсы тарифтің барлығы"></span></li>
+        <li><span class="fi">✓</span><span><strong data-ru="Проверка всех домашек" data-kz="Барлық үй тапсырмаларын тексеру"></strong></span></li>
+        <li><span class="fi">✓</span><span><strong data-ru="Еженедельные Q&amp;A созвоны" data-kz="Апталық Q&amp;A қоңыраулар"></strong></span></li>
+        <li><span class="fi">✓</span><span><strong data-ru="Разбор рекламного кабинета" data-kz="Жарнама кабинетін талдау"></strong></span></li>
+        <li><span class="fi">✓</span><span><strong data-ru="Доступ к базе клиентов" data-kz="Клиенттер базасына қол жеткізу"></strong></span></li>
+        <li><span class="fi">✓</span><span data-ru="Помощь с первыми клиентами" data-kz="Алғашқы клиенттермен көмек"></span></li>
+      </ul>
+      <button class="pbtn sol" onclick="openPay('great')" data-ru="Забронировать место" data-kz="Орын брондау"></button>
+    </div>
+    <div class="pcard">
+      <p class="pname" data-ru="НАСТАВНИЧЕСТВО" data-kz="ТӘЛІМГЕРЛІК"></p>
+      <p class="pprice">89 900 <span>₸</span></p>
+      <p class="pdesc" data-ru="Личная работа с Диасом + гарантия результата" data-kz="Диаспен жеке жұмыс + нәтиже кепілдігі"></p>
+      <ul class="pfeat">
+        <li><span class="fi">✓</span><span data-ru="Всё из тарифа Отличный" data-kz="Керемет тарифтің барлығы"></span></li>
+        <li><span class="fi">✓</span><span><strong data-ru="5 личных созвонов с Диасом" data-kz="Диаспен 5 жеке қоңырау"></strong></span></li>
+        <li><span class="fi">✓</span><span><strong data-ru="Гарантия первого клиента" data-kz="Алғашқы клиент кепілдігі"></strong></span></li>
+        <li><span class="fi">✓</span><span><strong data-ru="Работа с твоими кейсами" data-kz="Нақты кейстеріңмен жұмыс"></strong></span></li>
+        <li><span class="fi">✓</span><span><strong data-ru="Поддержка 3 месяца в мессенджере" data-kz="Мессенджерде 3 ай қолдау"></strong></span></li>
+      </ul>
+      <button class="pbtn sol" onclick="openPay('mentor')" data-ru="Забронировать место" data-kz="Орын брондау"></button>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="sec reveal">
+  <span class="stag">FAQ</span>
+  <h2 class="stitle" data-ru="Вопросы и ответы" data-kz="Сұрақтар мен жауаптар"></h2>
+  <p class="ssub" data-ru="Не нашёл ответ — пиши в Telegram" data-kz="Жауап таппасаң — Telegram-ға жаз"></p>
+  <div class="flist">
+    <div class="faq" onclick="this.classList.toggle('open')">
+      <div class="fq"><span data-ru="Я полный ноль. Справлюсь?" data-kz="Мен толық нөлмін. Бастай аламын ба?"></span><svg class="farr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="fa" data-ru="Абсолютно да. Курс начинается с нуля. Никаких предварительных знаний не нужно." data-kz="Абсолютно иә. Курс нөлден басталады. Алдын ала білім қажет емес."></div>
+    </div>
+    <div class="faq" onclick="this.classList.toggle('open')">
+      <div class="fq"><span data-ru="Сколько времени уделять в день?" data-kz="Күніне қанша уақыт бөлу керек?"></span><svg class="farr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="fa" data-ru="Достаточно 1–2 часа в день. Пожизненный доступ — учись в своём темпе." data-kz="Күніне 1–2 сағат жеткілікті. Өмір бойы қол жеткізу — өз қарқыныңмен оқи бер."></div>
+    </div>
+    <div class="faq" onclick="this.classList.toggle('open')">
+      <div class="fq"><span data-ru="Когда найду первого клиента?" data-kz="Алғашқы клиентті қашан табамын?"></span><svg class="farr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="fa" data-ru="Большинство учеников — на 4–8 неделе. На Наставничестве гарантируем первого клиента." data-kz="Оқушылардың көпшілігі — 4–8 аптада. Тәлімгерлікте алғашқы клиентке кепілдік береміз."></div>
+    </div>
+    <div class="faq" onclick="this.classList.toggle('open')">
+      <div class="fq"><span data-ru="Нужен бюджет для практики?" data-kz="Тәжірибе үшін бюджет керек пе?"></span><svg class="farr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="fa" data-ru="Для старта хватит 5 000–10 000 ₸. Покажем как работать даже с минимальным бюджетом." data-kz="Старт үшін 5 000–10 000 ₸ жеткілікті. Минималды бюджетпен жұмыс жасауды үйретеміз."></div>
+    </div>
+    <div class="faq" onclick="this.classList.toggle('open')">
+      <div class="fq"><span data-ru="Есть рассрочка?" data-kz="Бөліп төлеу бар ма?"></span><svg class="farr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="fa" data-ru="Да! Рассрочка до 12 месяцев без переплат. Напиши в Telegram — оформим быстро." data-kz="Иә! 12 айға дейін үстемақысыз. Telegram-ға жаз — тез рәсімдейміз."></div>
+    </div>
+  </div>
+</section>
+
+<!-- LEAD FORM -->
+<section class="sec reveal" id="lead-form" style="padding-top:0;">
+  <div class="lfsec">
+    <div class="lfglow"></div>
+    <span class="stag" style="position:relative;" data-ru="БЕСПЛАТНО" data-kz="ТЕГІН"></span>
+    <h2 class="stitle" style="position:relative;" data-ru="Забери бесплатный урок" data-kz="Тегін сабақ ал"></h2>
+    <p style="color:var(--tx2);font-size:clamp(13px,3.5vw,17px);margin-bottom:32px;position:relative;"
+      data-ru="Получи первый модуль бесплатно и убедись сам" data-kz="Алғашқы модульді тегін ал және өзің көз жеткіз"></p>
+    <div class="fg" style="position:relative;">
+      <input class="finput" type="text" id="lf-name" autocomplete="name">
+      <input class="finput" type="text" id="lf-phone" autocomplete="off" inputmode="text">
+    </div>
+    <div style="position:relative;display:flex;justify-content:center;">
+      <button class="btn-fire" id="lf-btn" onclick="submitLead()" data-ru="Получить бесплатно" data-kz="Тегін алу"></button>
+    </div>
+    <div class="fsuc" id="lf-ok">
+      <span>✓</span><span data-ru="Отлично! Свяжемся в течение 5 минут" data-kz="Тамаша! 5 минут ішінде хабарласамыз"></span>
+    </div>
+    <p class="fnote" data-ru="Нажимая кнопку, ты соглашаешься с политикой конфиденциальности" data-kz="Батырманы басу арқылы құпиялылық саясатымен келісесің"></p>
+  </div>
+</section>
+
+<footer>
+  <div class="flogo">Диас • TargetPro</div>
+  <p style="margin-bottom:14px;">© <span id="copy-year"></span> Диас. <span data-ru="Все права защищены." data-kz="Барлық құқықтар қорғалған."></span></p>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+    <a href="https://t.me/dias_target" target="_blank" rel="noopener"
+       style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:50px;
+              background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);
+              color:#C084FC;text-decoration:none;font-size:13px;font-weight:700;
+              transition:background .2s,border-color .2s;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.26 13.947l-2.94-.924c-.64-.203-.653-.64.136-.954l11.462-4.42c.537-.194 1.006.131.976.572z"/></svg>
+      Telegram
+    </a>
+    <a href="https://www.instagram.com/dias_khamzinn/" target="_blank" rel="noopener"
+       style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:50px;
+              background:rgba(236,72,153,.1);border:1px solid rgba(236,72,153,.3);
+              color:#F9A8D4;text-decoration:none;font-size:13px;font-weight:700;
+              transition:background .2s,border-color .2s;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+      Instagram
+    </a>
+    <a href="https://www.facebook.com/1032954076564748/" target="_blank" rel="noopener"
+       style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:50px;
+              background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.3);
+              color:#67E8F9;text-decoration:none;font-size:13px;font-weight:700;
+              transition:background .2s,border-color .2s;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.791-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.931-1.956 1.886v2.268h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
+      Facebook
+    </a>
+  </div>
+</footer>
+
+<!-- PAY MODAL -->
+<div class="moverlay" id="pay-modal" onclick="if(event.target===this)closePay()">
+  <div class="modal">
+    <div class="mpill"></div>
+    <button class="mclose" onclick="closePay()">✕</button>
+    <div id="pay-form">
+      <h2 data-ru="Оплата курса" data-kz="Курс төлемі"></h2>
+      <p class="msub" id="plan-lbl"></p>
+      <div class="ptag">
+        <span data-ru="К оплате:" data-kz="Төлеуге:"></span>
+        <strong id="pay-amt">19 900 ₸</strong>
+      </div>
+      <input class="minput" type="text" id="p-name" autocomplete="name">
+      <input class="minput" type="text" id="p-phone" autocomplete="off" inputmode="text">
+      <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;" data-ru="Способ оплаты:" data-kz="Төлем тәсілі:"></p>
+      <div class="methods">
+        <button class="method sel" id="m-kaspi" onclick="selM('kaspi')">Kaspi Pay</button>
+        <button class="method" id="m-card" onclick="selM('card')" data-ru="Карта" data-kz="Карта"></button>
+        <button class="method" id="m-tg" onclick="selM('tg')">Telegram</button>
+      </div>
+      <button class="pbtn sol" onclick="doPay()" data-ru="Оплатить →" data-kz="Төлеу →"></button>
+    </div>
+    <div class="psuc" id="pay-ok">
+      <div class="psuc-icon">✓</div>
+      <h2 data-ru="Заявка принята!" data-kz="Өтінім қабылданды!"></h2>
+      <p style="color:var(--tx2);font-size:14px;" data-ru="Диас напишет тебе в Telegram в течение 30 минут и отправит ссылку на оплату." data-kz="Диас 30 минут ішінде Telegram-да жазып, төлем сілтемесін жібереді."></p>
+      <button class="pbtn sol" style="margin-top:10px;" onclick="closePay()" data-ru="Закрыть" data-kz="Жабу"></button>
+    </div>
+  </div>
+</div>
+
+<!-- LEAD MODAL -->
+<div class="moverlay" id="lead-modal" onclick="if(event.target===this)closeLead()">
+  <div class="modal">
+    <div class="mpill"></div>
+    <button class="mclose" onclick="closeLead()">✕</button>
+    <div id="lead-form-m">
+      <h2 data-ru="Бесплатный урок" data-kz="Тегін сабақ"></h2>
+      <p class="msub" data-ru="Оставь контакт — пришлём первый модуль бесплатно" data-kz="Байланысыңды қалдыр — алғашқы модульді тегін жібереміз"></p>
+      <input class="minput" type="text" id="lm-name" autocomplete="name">
+      <input class="minput" type="text" id="lm-phone" autocomplete="off" inputmode="text">
+      <button class="pbtn sol" style="width:100%;margin-top:4px;" onclick="submitLeadM()" data-ru="Получить бесплатно →" data-kz="Тегін алу →"></button>
+    </div>
+    <div class="psuc" id="lead-ok">
+      <div class="psuc-icon" style="background:linear-gradient(135deg,#8B5CF6,#EC4899);">★</div>
+      <h2 data-ru="Готово!" data-kz="Дайын!"></h2>
+      <p style="color:var(--tx2);font-size:14px;" data-ru="Ссылка на урок придёт в течение 5 минут в Telegram или SMS." data-kz="Сабақ сілтемесі 5 минут ішінде Telegram немесе SMS-ке келеді."></p>
+      <button class="pbtn sol" style="margin-top:10px;" onclick="closeLead()" data-ru="Закрыть" data-kz="Жабу"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ CONFIG — ЗАМЕНИ НА СВОИ ══
+var lang = 'ru';
+var curPlan = 'good';
+var curMethod = 'kaspi';
+var plans = {
+  good:  {ru:'Хороший — 19 900 ₸',  kz:'Жақсы — 19 900 ₸',  price:'19 900 ₸'},
+  great: {ru:'Отличный — 39 900 ₸', kz:'Керемет — 39 900 ₸', price:'39 900 ₸'},
+  mentor:{ru:'Наставничество — 89 900 ₸',kz:'Тәлімгерлік — 89 900 ₸',price:'89 900 ₸'}
+};
+
+const BACKEND_URL = 'https://YOUR_BACKEND_URL/api/submit';
+
+async function submitToBackend(data){
+  const res = await fetch(BACKEND_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+
+  let result = {};
+  try {
+    result = await res.json();
+  } catch (e) {}
+
+  if (!res.ok || !result.ok) {
+    throw new Error(result.error || 'Submit failed');
+  }
+
+  return result;
+}
+
+function setLang(l){
+  lang=l;
+  document.getElementById('btn-ru').classList.toggle('active',l==='ru');
+  document.getElementById('btn-kz').classList.toggle('active',l==='kz');
+  document.querySelectorAll('[data-ru]').forEach(function(el){
+    var v=el.getAttribute('data-'+l);
+    if(v!==null) el.innerHTML=v;
+  });
+  var phs={
+    'lf-name':  {ru:'Твоё имя',kz:'Есімің'},
+    'lf-phone': {ru:'+7 (777) 123-45-67 или @username',kz:'+7 (777) 123-45-67 немесе @username'},
+    'p-name':   {ru:'Ваше имя',kz:'Есіміңіз'},
+    'p-phone':  {ru:'+7 (777) 123-45-67 или @username',kz:'+7 (777) 123-45-67 немесе @username'},
+    'lm-name':  {ru:'Твоё имя',kz:'Есімің'},
+    'lm-phone': {ru:'+7 (777) 123-45-67 или @username',kz:'+7 (777) 123-45-67 немесе @username'}
+  };
+  Object.keys(phs).forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.placeholder=phs[id][l];
+  });
+}
+
+function goto(id){var el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth'});}
+
+function openPay(plan){
+  curPlan=plan;
+  document.getElementById('plan-lbl').textContent=plans[plan][lang];
+  document.getElementById('pay-amt').textContent=plans[plan].price;
+  document.getElementById('pay-form').style.display='block';
+  document.getElementById('pay-ok').style.display='none';
+  document.getElementById('pay-modal').classList.add('open');
+  setLang(lang);
+}
+function closePay(){document.getElementById('pay-modal').classList.remove('open');}
+
+function openLead(){
+  document.getElementById('lead-form-m').style.display='block';
+  document.getElementById('lead-ok').style.display='none';
+  document.getElementById('lead-modal').classList.add('open');
+  setLang(lang);
+}
+function closeLead(){document.getElementById('lead-modal').classList.remove('open');}
+
+function selM(m){
+  curMethod=m;
+  ['kaspi','card','tg'].forEach(function(id){
+    document.getElementById('m-'+id).classList.toggle('sel',id===m);
+  });
+}
+
+// ════════════════════════════════════════
+//  УМНАЯ ВАЛИДАЦИЯ ФОРМ
+// ════════════════════════════════════════
+
+// Показывает ошибку под полем
+function showErr(el, msg) {
+  clearErr(el);
+  el.style.borderColor = 'rgba(239,68,68,.75)';
+  el.style.boxShadow   = '0 0 14px rgba(239,68,68,.22)';
+  var err = document.createElement('div');
+  err.className = 'field-err';
+  err.style.cssText = 'color:#F87171;font-size:11px;margin-top:5px;margin-left:4px;animation:errIn .2s ease;';
+  err.textContent = msg;
+  el.parentNode.insertBefore(err, el.nextSibling);
+}
+function clearErr(el) {
+  el.style.borderColor = '';
+  el.style.boxShadow   = '';
+  var nxt = el.nextSibling;
+  if (nxt && nxt.className === 'field-err') nxt.remove();
+}
+function showOk(el) {
+  el.style.borderColor = 'rgba(16,185,129,.55)';
+  el.style.boxShadow   = '0 0 12px rgba(16,185,129,.18)';
+}
+
+// ── Валидация имени ──
+// Минимум 2 символа, только буквы/пробел/дефис, не мусор
+function validateName(val, lang) {
+  val = val.trim();
+  var msgs = {
+    empty:   {ru:'Введи своё имя',                  kz:'Есіміңді енгіз'},
+    short:   {ru:'Имя слишком короткое (мин. 2 буквы)', kz:'Аты тым қысқа (кем дегенде 2 әріп)'},
+    invalid: {ru:'Имя должно содержать только буквы',kz:'Аты тек әріптерден тұруы керек'},
+    gibber:  {ru:'Введи настоящее имя',              kz:'Нақты атыңды енгіз'}
+  };
+  var L = lang || 'ru';
+  if (!val)                                     return msgs.empty[L];
+  if (val.length < 2)                           return msgs.short[L];
+  // Только буквы (кириллица, латиница, казахский), пробел, дефис
+  if (!/^[\u0400-\u04FF\u0410-\u044Fa-zA-ZÀ-öø-ÿ\s\-]+$/.test(val)) return msgs.invalid[L];
+  // Антиспам: повторяющиеся символы (аааааа, qqqqqq)
+  if (/(.)\1{3,}/.test(val))                    return msgs.gibber[L];
+  // Минимум 2 разных буквы
+  if (new Set(val.toLowerCase().replace(/[\s-]/g,'')).size < 2)         return msgs.gibber[L];
+  return null;
+}
+
+// ── Валидация телефона ──
+// Принимает: +7XXXXXXXXXX, 8XXXXXXXXXX, @username, или просто 10+ цифр
+function validatePhone(val, lang) {
+  var msgs = {
+    empty:   {ru:'Введи номер телефона или Telegram',kz:'Телефон нөірін немесе Telegram-ды енгіз'},
+    invalid: {ru:'Неверный формат. Пример: +7 777 123 45 67 или @username', kz:'Қате пішім. Мысалы: +7 777 123 45 67 немесе @username'}
+  };
+  var L = lang || 'ru';
+  val = val.trim();
+  if (!val) return msgs.empty[L];
+  // Telegram username
+  if (val.startsWith('@')) {
+    if (/^@[a-zA-Z0-9_]{3,32}$/.test(val)) return null;
+    return msgs.invalid[L];
+  }
+  // Только цифры
+  var digits = val.replace(/[\s\-\(\)\+]/g, '');
+  // Казахстан/Россия: +7 или 8 + 10 цифр
+  if (/^[78]\d{10}$/.test(digits)) return null;
+  // Международный с +
+  if (val.startsWith('+') && /^\+\d{7,15}$/.test(val.replace(/[\s\-\(\)]/g,''))) return null;
+  return msgs.invalid[L];
+}
+
+// Маска ввода телефона (автоформат +7 (XXX) XXX-XX-XX)
+function phoneMask(el) {
+  el.addEventListener('input', function(e) {
+    var v = this.value.replace(/\D/g, '');
+    if (this.value.startsWith('@')) return; // телеграм — не трогаем
+    if (!v) return;
+    if (v.length > 0 && v[0] === '8') v = '7' + v.slice(1);
+    if (v.length > 0 && v[0] !== '7') v = '7' + v;
+    var out = '+7';
+    if (v.length > 1) out += ' (' + v.slice(1,4);
+    if (v.length >= 4) out += ') ' + v.slice(4,7);
+    if (v.length >= 7) out += '-' + v.slice(7,9);
+    if (v.length >= 9) out += '-' + v.slice(9,11);
+    this.value = out;
+  });
+  // Если начинают вводить @ — убираем маску
+  el.addEventListener('keydown', function(e) {
+    if (this.value === '' && e.key === '@') {
+      // разрешаем вводить @ без маски
+    }
+  });
+}
+
+// Живая валидация при изменении поля
+function liveValidate(nameId, phoneId) {
+  var nEl = document.getElementById(nameId);
+  var pEl = document.getElementById(phoneId);
+  if (nEl) {
+    nEl.addEventListener('blur', function() {
+      var err = validateName(this.value, lang);
+      if (err) showErr(this, err); else showOk(this);
+    });
+    nEl.addEventListener('input', function() {
+      if (this.style.borderColor) clearErr(this);
+    });
+  }
+  if (pEl) {
+    phoneMask(pEl);
+    pEl.addEventListener('blur', function() {
+      var err = validatePhone(this.value, lang);
+      if (err) showErr(this, err); else showOk(this);
+    });
+    pEl.addEventListener('input', function() {
+      if (this.style.borderColor) clearErr(this);
+    });
+  }
+}
+
+function shake(el){
+  el.style.borderColor='rgba(239,68,68,.7)';
+  el.style.animation='shake .4s ease';
+  setTimeout(function(){el.style.borderColor='';el.style.animation='';},2000);
+}
+
+// ── Форма оплаты (модал) ──
+async function doPay(){
+  var nEl = document.getElementById('p-name');
+  var pEl = document.getElementById('p-phone');
+  var n = nEl.value.trim();
+  var p = pEl.value.trim();
+  var nErr = validateName(n, lang);
+  var pErr = validatePhone(p, lang);
+  var ok = true;
+  if (nErr) { showErr(nEl, nErr); ok=false; } else showOk(nEl);
+  if (pErr) { showErr(pEl, pErr); ok=false; } else showOk(pEl);
+  if (!ok) return;
+
+  try {
+    await submitToBackend({
+      type:'payment',
+      name:n,
+      phone:p,
+      plan:curPlan,
+      method:curMethod,
+      lang:lang,
+      source:'оплата'
+    });
+    document.getElementById('pay-form').style.display='none';
+    document.getElementById('pay-ok').style.display='flex';
+    setLang(lang);
+  } catch (err) {
+    console.error(err);
+    alert(err.message || 'Ошибка отправки платежа. Попробуйте ещё раз.');
+  }
+}
+
+// ── Форма лид (модал) ──
+async function submitLeadM(){
+  var nEl = document.getElementById('lm-name');
+  var pEl = document.getElementById('lm-phone');
+  var n = nEl.value.trim();
+  var p = pEl.value.trim();
+  var nErr = validateName(n, lang);
+  var pErr = validatePhone(p, lang);
+  var ok = true;
+  if (nErr) { showErr(nEl, nErr); ok=false; } else showOk(nEl);
+  if (pErr) { showErr(pEl, pErr); ok=false; } else showOk(pEl);
+  if (!ok) return;
+
+  try {
+    await submitToBackend({
+      type:'lead',
+      name:n,
+      phone:p,
+      lang:lang,
+      source:'лид-модал'
+    });
+    document.getElementById('lead-form-m').style.display='none';
+    document.getElementById('lead-ok').style.display='flex';
+    setLang(lang);
+  } catch (err) {
+    console.error(err);
+    alert(err.message || 'Ошибка отправки лидa. Попробуйте ещё раз.');
+  }
+}
+
+// ── Форма лид (внизу страницы) ──
+async function submitLead(){
+  var nEl = document.getElementById('lf-name');
+  var pEl = document.getElementById('lf-phone');
+  var n = nEl.value.trim();
+  var p = pEl.value.trim();
+  var nErr = validateName(n, lang);
+  var pErr = validatePhone(p, lang);
+  var ok = true;
+  if (nErr) { showErr(nEl, nErr); ok=false; } else showOk(nEl);
+  if (pErr) { showErr(pEl, pErr); ok=false; } else showOk(pEl);
+  if (!ok) return;
+
+  var btn=document.getElementById('lf-btn');
+  btn.textContent=lang==='ru'?'Отправляем...':'Жіберуде...';
+  btn.disabled=true;
+
+  try {
+    await submitToBackend({
+      type:'lead',
+      name:n,
+      phone:p,
+      lang:lang,
+      source:'форма внизу'
+    });
+    setTimeout(function(){
+      btn.style.display='none';
+      var ok=document.getElementById('lf-ok');
+      ok.style.display='flex';
+      setLang(lang);
+    },900);
+  } catch (err) {
+    console.error(err);
+    btn.textContent = lang==='ru'?'Получить бесплатно':'Тегін алу';
+    btn.disabled = false;
+    alert(err.message || 'Ошибка отправки. Попробуйте ещё раз.');
+  }
+}
+
+// Инициализация живой валидации
+document.addEventListener('DOMContentLoaded', function() {
+  liveValidate('p-name', 'p-phone');
+  liveValidate('lm-name', 'lm-phone');
+  liveValidate('lf-name', 'lf-phone');
+});
+
+// ════════════════════════════════════════
+//  ОТЗЫВЫ — ЗАГРУЗКА И ОТПРАВКА
+// ════════════════════════════════════════
+var REVIEWS_SHEET_GID = ''; // заполнится автоматически
+var curRating = 5;
+
+// Звёздочки — выбор оценки
+document.addEventListener('DOMContentLoaded', function() {
+  var stars = document.querySelectorAll('#stars-pick span');
+  // По умолчанию 5 звёзд
+  stars.forEach(function(s){ s.classList.add('on'); });
+  stars.forEach(function(s, i) {
+    s.addEventListener('mouseenter', function() {
+      stars.forEach(function(x, j){ x.classList.toggle('on', j <= i); });
+    });
+    s.addEventListener('click', function() {
+      curRating = parseInt(s.getAttribute('data-v'));
+      stars.forEach(function(x, j){ x.classList.toggle('on', j < curRating); });
+    });
+  });
+  document.getElementById('stars-pick').addEventListener('mouseleave', function() {
+    stars.forEach(function(x, j){ x.classList.toggle('on', j < curRating); });
+  });
+
+  // Загружаем одобренные отзывы
+  loadReviews();
+});
+
+function loadReviews() {
+  var sheetId = '1nu20FT1JXJHHgG6KEyAgRTSqg8ffPTuVXDkgxsLzfXE';
+  var gid = '352414975';
+  // Используем gviz API с gid (обходит CORS, без проблем с кириллицей)
+  var url = 'https://docs.google.com/spreadsheets/d/' + sheetId +
+            '/gviz/tq?tqx=out:json&gid=' + gid;
+
+  var script = document.createElement('script');
+  var cbName = '_revCb_' + Date.now();
+  var timeout;
+  window[cbName] = function(resp) {
+    clearTimeout(timeout); // ← фикс: отменяем таймаут при успешном ответе
+    delete window[cbName];
+    try { document.head.removeChild(script); } catch(e){}
+    try {
+      var rows = resp.table.rows;
+      var approved = [];
+      rows.forEach(function(row) {
+        if (!row.c) return;
+        var name   = row.c[1] && row.c[1].v ? String(row.c[1].v) : '';
+        var text   = row.c[2] && row.c[2].v ? String(row.c[2].v) : '';
+        var rating = row.c[3] && row.c[3].v ? parseInt(row.c[3].v) : 5;
+        var date   = row.c[4] && row.c[4].v ? String(row.c[4].v) : '';
+        var status = row.c[5] && row.c[5].v ? String(row.c[5].v).toLowerCase().trim() : '';
+        if (!name) return;
+        if (status === 'одобрено' || status === 'approved') {
+          approved.push({ name:name, text:text, rating:rating, date:date });
+        }
+      });
+      renderReviews(approved);
+    } catch(e) { showFallbackReviews(); }
+  };
+  // callback передаётся через tqx
+  script.src = 'https://docs.google.com/spreadsheets/d/' + sheetId +
+               '/gviz/tq?tqx=out:json;responseHandler:' + cbName + '&gid=' + gid;
+  // Таймаут — если не загрузилось за 6 сек
+  timeout = setTimeout(function(){
+    try { delete window[cbName]; document.head.removeChild(script); } catch(e){}
+    showFallbackReviews();
+  }, 6000);
+  script.onerror = function(){
+    clearTimeout(timeout);
+    try { delete window[cbName]; } catch(e){}
+    showFallbackReviews();
+  };
+  document.head.appendChild(script);
+}
+
+function renderReviews(approved) {
+  var loading = document.getElementById('rev-loading');
+  var grid    = document.getElementById('reviews-grid');
+  loading.style.display = 'none';
+
+  if (!approved || approved.length === 0) {
+    showFallbackReviews();
+    return;
+  }
+
+  grid.style.display = 'grid';
+  grid.innerHTML = '';
+  var colors = [
+    ['rgba(139,92,246,.2)','#C084FC'],
+    ['rgba(6,182,212,.2)','#67E8F9'],
+    ['rgba(245,158,11,.2)','#FCD34D'],
+    ['rgba(236,72,153,.2)','#F9A8D4'],
+    ['rgba(16,185,129,.2)','#34D399']
+  ];
+  approved.forEach(function(r, i) {
+    var col = colors[i % colors.length];
+    var initials = r.name.trim().split(' ').map(function(w){ return w[0]||''; }).join('').toUpperCase().slice(0,2);
+    var stars = '';
+    for(var s=1;s<=5;s++) stars += s <= r.rating ? '★' : '☆';
+    var card = document.createElement('div');
+    card.className = 'tcard reveal vis';
+    card.innerHTML =
+      '<div class="stars" style="color:var(--y);">' + stars + '</div>' +
+      '<p class="ttext">' + escHtml(r.text) + '</p>' +
+      '<div class="tauth">' +
+        '<div class="tav" style="background:' + col[0] + ';color:' + col[1] + ';">' + initials + '</div>' +
+        '<div><div class="tname">' + escHtml(r.name) + '</div>' +
+        '<div class="trole">' + escHtml(r.date||'') + '</div></div>' +
+      '</div>';
+    grid.appendChild(card);
+  });
+}
+
+function showFallbackReviews() {
+  // Показываем статичные отзывы пока нет реальных
+  var grid  = document.getElementById('reviews-grid');
+  var empty = document.getElementById('rev-empty');
+  grid.style.display = 'none';
+  empty.style.display = 'block';
+}
+
+function parseCSVLine(line) {
+  var result = [], cur = '', inQ = false;
+  for(var i=0;i<line.length;i++){
+    var c = line[i];
+    if(c==='"'){ inQ=!inQ; continue; }
+    if(c===','&&!inQ){ result.push(cur.trim()); cur=''; continue; }
+    cur+=c;
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function submitReview() {
+  var nameEl = document.getElementById('rv-name');
+  var textEl = document.getElementById('rv-text');
+  var btn = document.getElementById('rv-btn');
+  var suc = document.getElementById('rv-suc');
+
+  var n = (nameEl.value || '').trim();
+  var t = (textEl.value || '').trim();
+
+  if (!n) {
+    nameEl.style.borderColor = 'red';
+    nameEl.focus();
+    return;
+  }
+
+  if (!t || t.length < 10) {
+    textEl.style.borderColor = 'red';
+    textEl.focus();
+    return;
+  }
+
+  btn.disabled = true;
+  var oldText = btn.textContent;
+  btn.textContent = 'Отправляем...';
+
+  try {
+    await submitToBackend({
+      type: 'review',
+      name: n,
+      text: t,
+      rating: Number(curRating) || 5,
+      lang: lang
+    });
+
+    suc.style.display = 'flex';
+    btn.style.display = 'none';
+
+    nameEl.value = '';
+    textEl.value = '';
+
+  } catch (err) {
+    console.error(err);
+    btn.disabled = false;
+    btn.textContent = oldText;
+    alert('Ошибка отправки');
+  }
+}
+
+
+
+
+// Particles
+var pc=document.getElementById('pts');
+for(var i=0;i<20;i++){
+  var pt=document.createElement('div');pt.className='pt';
+  var sz=Math.random()*4+2;
+  var cols=['rgba(139,92,246,.5)','rgba(6,182,212,.5)','rgba(245,158,11,.4)','rgba(236,72,153,.4)'];
+  pt.style.cssText='width:'+sz+'px;height:'+sz+'px;left:'+Math.random()*100+'%;'
+    +'background:'+cols[Math.floor(Math.random()*cols.length)]+';'
+    +'animation-duration:'+(Math.random()*15+10)+'s;animation-delay:'+(Math.random()*10)+'s;';
+  pc.appendChild(pt);
+}
+
+// Reveal
+var obs=new IntersectionObserver(function(es){
+  es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('vis');});
+},{threshold:.08});
+document.querySelectorAll('.reveal').forEach(function(r){obs.observe(r);});
+
+// ── Sticky navbar ──
+(function(){
+  var nav    = document.getElementById('snav');
+  var OFFSET = 56;
+
+  function onScroll(){
+    var sy = window.pageYOffset || document.documentElement.scrollTop;
+    if(sy > 80){
+      nav.classList.add('visible');
+    } else {
+      nav.classList.remove('visible','scrolled');
+      return;
+    }
+    if(sy > 200){
+      nav.classList.add('scrolled');
+    } else {
+      nav.classList.remove('scrolled');
+    }
+    var anchors = ['top','program','reviews','pricing'];
+    var navH    = nav.offsetHeight + OFFSET;
+    var current = anchors[0];
+    for(var i = anchors.length - 1; i >= 0; i--){
+      var el = document.getElementById(anchors[i]);
+      if(el && el.getBoundingClientRect().top <= navH + 10){
+        current = anchors[i];
+        break;
+      }
+    }
+    document.querySelectorAll('.snav-a').forEach(function(a){
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  }
+
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+
+  document.querySelectorAll('.snav-a, .snav-logo').forEach(function(a){
+    a.addEventListener('click', function(e){
+      var href = a.getAttribute('href');
+      if(!href || href.charAt(0) !== '#') return;
+      var target = document.getElementById(href.slice(1));
+      if(!target) return;
+      e.preventDefault();
+      var stickyH = (document.querySelector('.lang-bar')||{offsetHeight:0}).offsetHeight
+                  + nav.offsetHeight;
+      var top = target.getBoundingClientRect().top + window.pageYOffset - stickyH;
+      window.scrollTo({top: Math.max(0, top), behavior:'smooth'});
+    });
+  });
+
+  var _origGoto = window.goto;
+  window.goto = function(id){
+    var target = document.getElementById(id);
+    if(!target){ if(_origGoto) _origGoto(id); return; }
+    var stickyH = (document.querySelector('.lang-bar')||{offsetHeight:0}).offsetHeight
+                + nav.offsetHeight;
+    var top = target.getBoundingClientRect().top + window.pageYOffset - stickyH;
+    window.scrollTo({top: Math.max(0, top), behavior:'smooth'});
+  };
+})();
+
+document.getElementById('copy-year').textContent = new Date().getFullYear();
+
+setLang('ru');
+</script>
+</body>
+</html>
