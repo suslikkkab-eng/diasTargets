@@ -349,6 +349,14 @@ footer{border-top:1px solid var(--brd);padding:36px 20px;text-align:center;color
 
 /* ══ HONEYPOT ══ */
 .hp-field{position:absolute;left:-9999px;top:-9999px;opacity:0;height:0;width:0;overflow:hidden;pointer-events:none;tabindex:-1;}
+
+/* ══ ANTISPAM / STATUS MESSAGES ══ */
+.form-status-msg{display:none;align-items:center;gap:10px;border-radius:14px;padding:13px 18px;font-size:13px;font-weight:700;margin-top:12px;animation:errIn .25s ease;}
+.form-status-msg.err{background:rgba(239,68,68,.09);border:1px solid rgba(239,68,68,.32);color:#F87171;}
+.form-status-msg.warn{background:rgba(245,158,11,.09);border:1px solid rgba(245,158,11,.32);color:#FCD34D;}
+.form-status-msg.show{display:flex;}
+.phone-err{color:#F87171;font-size:11px;margin-top:5px;margin-left:4px;animation:errIn .2s ease;display:none;}
+.phone-err.show{display:block;}
 </style>
 </head>
 <body>
@@ -538,9 +546,11 @@ footer{border-top:1px solid var(--brd);padding:36px 20px;text-align:center;color
         <input type="text" id="hp_website" name="website" autocomplete="off" tabindex="-1">
       </div>
       <input class="quiz-input" id="q-phone" type="text" inputmode="tel" style="position:relative;">
+      <div class="phone-err" id="q-phone-err"></div>
+      <div class="form-status-msg" id="quiz-status-msg"></div>
       <div class="quiz-btns">
         <button class="quiz-back" onclick="prevStep(6)" data-ru="← Назад" data-kz="← Артқа"></button>
-        <button class="quiz-next" onclick="trackQuizLead();submitQuiz()" id="quiz-submit-btn" data-ru="Записаться на созвон 🚀" data-kz="Қоңырауға жазылу 🚀"></button>
+        <button class="quiz-next" onclick="submitQuiz()" id="quiz-submit-btn" data-ru="Записаться на созвон 🚀" data-kz="Қоңырауға жазылу 🚀"></button>
       </div>
       <div class="quiz-counter">6 <span data-ru="из" data-kz="ден"></span> 6</div>
     </div>
@@ -803,6 +813,7 @@ footer{border-top:1px solid var(--brd);padding:36px 20px;text-align:center;color
       <input class="finput" type="text" id="lf-name" autocomplete="name">
       <input class="finput" type="text" id="lf-phone" autocomplete="off" inputmode="tel">
     </div>
+    <div class="form-status-msg" id="lf-status-msg" style="max-width:480px;margin:10px auto 0;"></div>
     <div style="position:relative;display:flex;justify-content:center;">
       <button class="btn-fire" id="lf-btn" onclick="submitLead()" data-ru="Записаться бесплатно" data-kz="Тегін жазылу"></button>
     </div>
@@ -952,6 +963,57 @@ function prevStep(step){
   setLang(lang);
 }
 
+// ══ АНТИСПАМ — ЛИМИТ 2 ЗАЯВКИ ЗА 5 МИНУТ ══
+var SPAM_LIMIT = 2;
+var SPAM_WINDOW = 5 * 60 * 1000; // 5 минут в мс
+var SPAM_KEY = 'form_submissions';
+
+function getSubmissions(){
+  try {
+    var raw = localStorage.getItem(SPAM_KEY);
+    if(!raw) return [];
+    return JSON.parse(raw).filter(function(ts){ return Date.now()-ts < SPAM_WINDOW; });
+  } catch(e){ return []; }
+}
+
+function recordSubmission(){
+  try {
+    var arr = getSubmissions();
+    arr.push(Date.now());
+    localStorage.setItem(SPAM_KEY, JSON.stringify(arr));
+  } catch(e){}
+}
+
+function checkSpamLimit(){
+  return getSubmissions().length >= SPAM_LIMIT;
+}
+
+function showStatusMsg(elId, type, msgRu, msgKz){
+  var el = document.getElementById(elId);
+  if(!el) return;
+  el.className = 'form-status-msg ' + type + ' show';
+  el.textContent = lang === 'kz' ? msgKz : msgRu;
+}
+
+function hideStatusMsg(elId){
+  var el = document.getElementById(elId);
+  if(el){ el.className = 'form-status-msg'; el.textContent = ''; }
+}
+
+function showPhoneErr(elId, errId){
+  var el = document.getElementById(elId);
+  var err = document.getElementById(errId);
+  if(el){ el.style.borderColor='rgba(239,68,68,.75)'; el.style.boxShadow='0 0 14px rgba(239,68,68,.22)'; }
+  if(err){ err.textContent = lang==='kz' ? 'Дұрыс телефон нөмерін енгізіңіз' : 'Введите корректный номер телефона'; err.className='phone-err show'; }
+}
+
+function clearPhoneErr(elId, errId){
+  var el = document.getElementById(elId);
+  var err = document.getElementById(errId);
+  if(el){ el.style.borderColor=''; el.style.boxShadow=''; }
+  if(err){ err.className='phone-err'; }
+}
+
 function trackQuizLead(){
   try { fbq('track','Lead'); } catch(e){}
 }
@@ -959,15 +1021,35 @@ function trackQuizLead(){
 async function submitQuiz(){
   // Anti-bot: honeypot check
   var hp = document.getElementById('hp_website');
-  if(hp && hp.value){ console.log('Bot detected'); return; }
+  if(hp && hp.value){ return; } // тихо блокируем
 
+  // Блокировка двойного клика
+  var btn = document.getElementById('quiz-submit-btn');
+  if(btn.disabled) return;
+  var btnOldText = btn.getAttribute('data-'+lang) || btn.textContent;
+
+  // Проверка спам-лимита
+  if(checkSpamLimit()){
+    showStatusMsg('quiz-status-msg','warn',
+      '⏳ Подождите немного перед следующей отправкой',
+      '⏳ Келесі жіберу алдында сәл күтіңіз');
+    return;
+  }
+
+  // Валидация телефона (строгая)
   var p = (document.getElementById('q-phone').value||'').trim();
   var pErr = validatePhone(p, lang);
-  if(pErr){ document.getElementById('q-phone').focus(); return; }
+  if(pErr){
+    showPhoneErr('q-phone','q-phone-err');
+    document.getElementById('q-phone').focus();
+    return;
+  }
+  clearPhoneErr('q-phone','q-phone-err');
+  hideStatusMsg('quiz-status-msg');
   quizData[6] = p;
 
-  var btn = document.getElementById('quiz-submit-btn');
-  btn.textContent = lang==='ru'?'Отправляем...':'Жіберуде...';
+  // Блокируем кнопку
+  btn.textContent = lang==='ru'?'Отправка...':'Жіберілуде...';
   btn.disabled = true;
 
   var payload = {
@@ -983,13 +1065,33 @@ async function submitQuiz(){
     utm: utmParams
   };
 
-  // Отправка только на бекенд (backend сам шлёт в Telegram/email)
+  var sendOk = false;
   if(BACKEND_URL && BACKEND_URL.indexOf('YOUR_BACKEND') === -1){
-    try { await submitToBackend(payload); } catch(e){ console.error(e); }
+    try {
+      await submitToBackend(payload);
+      sendOk = true;
+    } catch(e){
+      sendOk = false;
+    }
+  } else {
+    sendOk = false;
   }
 
-  // Facebook Pixel — событие Lead
-  try { fbq('track','Lead', { content_name: 'quiz_complete', value: 0, currency: 'KZT' }); } catch(e){}
+  if(!sendOk){
+    showStatusMsg('quiz-status-msg','err',
+      '❌ Ошибка отправки. Попробуйте ещё раз.',
+      '❌ Жіберу қатесі. Қайта байқаңыз.');
+
+    btn.textContent = btnOldText;
+    btn.disabled = false;
+    return;
+  }
+
+  // Записываем отправку (антиспам)
+  recordSubmission();
+
+  // Facebook Pixel — Lead только при успешной отправке
+  trackQuizLead();
 
   // Показываем благодарность
   document.getElementById('qstep-6').classList.remove('active');
@@ -1006,7 +1108,6 @@ async function submitQuiz(){
   );
   document.getElementById('whatsapp-redirect').href = 'https://wa.me/'+WA_NUMBER+'?text='+msg;
 
-  // Авто-редирект в WA через 3 сек на мобильных
   if(/Mobi|Android/i.test(navigator.userAgent)){
     setTimeout(function(){
       window.open('https://wa.me/'+WA_NUMBER+'?text='+msg,'_blank');
@@ -1238,22 +1339,51 @@ async function submitLeadM(){
 // ══ ФОРМА ЛИД (НИЗ СТРАНИЦЫ) ══
 async function submitLead(){
   var hp=document.getElementById('hp_lf');
-  if(hp&&hp.value){console.log('Bot');return;}
+  if(hp&&hp.value){ return; } // тихо блокируем
+
+  var btn=document.getElementById('lf-btn');
+  if(btn.disabled) return;
+  var btnOldText = btn.getAttribute('data-'+lang) || btn.textContent;
+
+  // Антиспам
+  if(checkSpamLimit()){
+    showStatusMsg('lf-status-msg','warn',
+      '⏳ Подождите немного перед следующей отправкой',
+      '⏳ Келесі жіберу алдында сәл күтіңіз');
+    return;
+  }
+
   var nEl=document.getElementById('lf-name'),pEl=document.getElementById('lf-phone');
   var nErr=validateName(nEl.value,lang),pErr=validatePhone(pEl.value,lang);
   var ok=true;
   if(nErr){showErr(nEl,nErr);ok=false;}else showOk(nEl);
   if(pErr){showErr(pEl,pErr);ok=false;}else showOk(pEl);
-  if(!ok) return;
-  var btn=document.getElementById('lf-btn');
-  btn.textContent=lang==='ru'?'Отправляем...':'Жіберуде...';
+  if(!ok){ hideStatusMsg('lf-status-msg'); return; }
+
+  hideStatusMsg('lf-status-msg');
+  btn.textContent=lang==='ru'?'Отправка...':'Жіберілуде...';
   btn.disabled=true;
+
   var payload={type:'lead',name:nEl.value.trim(),phone:pEl.value.trim(),lang:lang,source:'форма внизу',utm:utmParams};
-  try{if(BACKEND_URL&&BACKEND_URL.indexOf('YOUR_BACKEND')===-1)await submitToBackend(payload);}catch(e){}
+  if(BACKEND_URL&&BACKEND_URL.indexOf('YOUR_BACKEND')===-1){
+    try{ await submitToBackend(payload); } catch(e){
+      showStatusMsg('lf-status-msg','err',
+        '❌ Ошибка отправки. Попробуйте ещё раз.',
+        '❌ Жіберу қатесі. Қайта байқаңыз.');
+      btn.textContent=btnOldText;
+      btn.disabled=false;
+      return;
+    }
+  }
+
+  // Записываем отправку (антиспам)
+  recordSubmission();
+
+  // Facebook Pixel Lead — только при успехе
   try{fbq('track','Lead',{content_name:'bottom_form',currency:'KZT'});}catch(e){}
+
   btn.style.display='none';
   document.getElementById('lf-ok').style.display='flex';
-  // WhatsApp редирект после формы
   var msg=encodeURIComponent('Привет Диас! Я '+nEl.value.trim()+'. Телефон: '+pEl.value.trim());
   setTimeout(function(){window.open('https://wa.me/'+WA_NUMBER+'?text='+msg,'_blank');},1500);
   setLang(lang);
@@ -1283,6 +1413,19 @@ document.addEventListener('DOMContentLoaded',function(){
   liveValidate('p-name','p-phone');
   liveValidate('lf-name','lf-phone');
   phoneMask(document.getElementById('q-phone')||{addEventListener:function(){}});
+  // Очистка ошибки телефона квиза при вводе
+  var qPhoneEl = document.getElementById('q-phone');
+  if(qPhoneEl){
+    qPhoneEl.addEventListener('input',function(){
+      clearPhoneErr('q-phone','q-phone-err');
+      hideStatusMsg('quiz-status-msg');
+    });
+    qPhoneEl.addEventListener('blur',function(){
+      var e=validatePhone(this.value,lang);
+      if(e) showPhoneErr('q-phone','q-phone-err');
+      else clearPhoneErr('q-phone','q-phone-err');
+    });
+  }
   loadReviews();
 });
 
