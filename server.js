@@ -1,264 +1,173 @@
-// ============================================
-// frontend.js - ПОЛНОСТЬЮ ИСПРАВЛЕННЫЙ
-// ============================================
-(function() {
-  const BACKEND_BASE_URL = 'https://diastargets-2.onrender.com'; // ЗАМЕНИТЕ НА РЕАЛЬНЫЙ URL
-  
-  let currentBackendUrl = BACKEND_BASE_URL;
-  let configLoaded = false;
+// ══════════════════════════════════════════════════════════
+//  server.js  —  исправлено:
+//  1. CommonJS require → ES Module import (package.json type=module)
+//  2. Добавлен GET /api/config — без него фронтенд не устанавливает
+//     _configLoaded=true и submitQuiz() молча выходит (строка 1623)
+// ══════════════════════════════════════════════════════════
 
-  async function loadConfig() {
-    try {
-      const response = await fetch(`${BACKEND_BASE_URL}/api/config`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      if (response.ok) {
-        const config = await response.json();
-        if (config.backend_url) {
-          currentBackendUrl = config.backend_url;
-        } else {
-          currentBackendUrl = BACKEND_BASE_URL;
-        }
-        configLoaded = true;
-        console.log('Config loaded:', currentBackendUrl);
-      } else {
-        currentBackendUrl = BACKEND_BASE_URL;
-        configLoaded = true;
-        console.log('Using fallback URL:', currentBackendUrl);
-      }
-    } catch (error) {
-      console.error('Config load error, using fallback:', error);
-      currentBackendUrl = BACKEND_BASE_URL;
-      configLoaded = true;
-    }
-  }
+import express from 'express';
+import cors    from 'cors';
 
-  async function submitForm(payload) {
-    if (!configLoaded) {
-      await loadConfig();
-    }
-    
-    try {
-      const response = await fetch(`${currentBackendUrl}/api/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      
-      const result = await response.json();
-      
-      if (!response.ok || !result.ok) {
-        throw new Error(result.error || 'Submit failed');
-      }
-      
-      return { success: true, data: result };
-    } catch (error) {
-      console.error('Submit error:', error);
-      return { success: false, error: error.message };
-    }
-  }
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-  window.submitLeadForm = async function(formElement) {
-    const formData = new FormData(formElement);
-    const payload = {
-      type: 'lead',
-      name: formData.get('name'),
-      phone: formData.get('phone'),
-      source: formData.get('source') || 'сайт',
-      lang: formData.get('lang') || 'ru',
-      utm: {}
-    };
-    
-    const result = await submitForm(payload);
-    
-    if (result.success) {
-      alert('✅ Заявка отправлена! Мы свяжемся с вами.');
-      formElement.reset();
-    } else {
-      alert('❌ Ошибка: ' + result.error + '. Попробуйте позже.');
-    }
-    
-    return result.success;
-  };
+// ── Токены из переменных окружения ──
+const TG_BOT_TOKEN    = process.env.TG_BOT_TOKEN    || '';
+const TG_CHAT_ID      = process.env.TG_CHAT_ID      || '';
+const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_URL || '';
+const WA_NUMBER       = process.env.WA_NUMBER       || '';
 
-  window.submitPaymentForm = async function(formElement) {
-    const formData = new FormData(formElement);
-    const payload = {
-      type: 'payment',
-      name: formData.get('name'),
-      phone: formData.get('phone'),
-      plan: formData.get('plan'),
-      method: formData.get('method'),
-      source: formData.get('source') || 'сайт',
-      lang: formData.get('lang') || 'ru',
-      utm: {}
-    };
-    
-    const result = await submitForm(payload);
-    
-    if (result.success) {
-      alert('✅ Заявка на оплату принята!');
-      formElement.reset();
-    } else {
-      alert('❌ Ошибка: ' + result.error);
-    }
-    
-    return result.success;
-  };
-
-  window.submitReviewForm = async function(formElement) {
-    const formData = new FormData(formElement);
-    const payload = {
-      type: 'review',
-      name: formData.get('name'),
-      text: formData.get('text'),
-      rating: parseInt(formData.get('rating')) || 5,
-      lang: formData.get('lang') || 'ru'
-    };
-    
-    const result = await submitForm(payload);
-    
-    if (result.success) {
-      alert('✅ Спасибо за отзыв!');
-      formElement.reset();
-    } else {
-      alert('❌ Ошибка: ' + result.error);
-    }
-    
-    return result.success;
-  };
-
-  window.submitQuizForm = async function(formElement) {
-    const formData = new FormData(formElement);
-    const payload = {
-      type: 'quiz',
-      name: formData.get('name'),
-      phone: formData.get('phone'),
-      business: formData.get('business') || '',
-      budget: formData.get('budget') || '',
-      request: formData.get('request') || '',
-      hasSales: formData.get('hasSales') || '',
-      source: 'квиз',
-      lang: formData.get('lang') || 'ru',
-      utm: {}
-    };
-    
-    const result = await submitForm(payload);
-    
-    if (result.success) {
-      alert('✅ Заявка отправлена! Мы свяжемся с вами для консультации.');
-      formElement.reset();
-      
-      if (window.onQuizSuccess) {
-        window.onQuizSuccess();
-      }
-    } else {
-      alert('❌ Ошибка: ' + result.error);
-    }
-    
-    return result.success;
-  };
-
-  window.bookCall = async function(userData) {
-    if (!userData || !userData.name || !userData.phone) {
-      alert('❌ Пожалуйста, укажите имя и телефон');
-      return false;
-    }
-    
-    const payload = {
-      type: 'quiz',
-      name: userData.name,
-      phone: userData.phone,
-      business: userData.business || '',
-      budget: userData.budget || '',
-      request: 'Запись на созвон',
-      hasSales: userData.hasSales || '',
-      source: 'созвон',
-      lang: 'ru',
-      utm: {}
-    };
-    
-    const result = await submitForm(payload);
-    
-    if (result.success) {
-      alert('✅ Заявка на созвон отправлена! Мы свяжемся с вами в течение 15 минут.');
-      return true;
-    } else {
-      alert('❌ Ошибка: ' + result.error + '. Пожалуйста, попробуйте еще раз или свяжитесь с нами по телефону.');
-      return false;
-    }
-  };
-  window.openQuiz = function () {
-  const modal = document.getElementById('quiz-modal');
-
-  if (modal) {
-    modal.classList.add('open');
-    return;
-  }
-
-  const quizBlock =
-    document.getElementById('quiz') ||
-    document.querySelector('.quiz-wrap') ||
-    document.querySelector('form[data-type="quiz"]');
-
-  if (quizBlock) {
-    quizBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    return;
-  }
-
-  alert('Квиз не найден');
-};
-
-  loadConfig();
-  
-  document.addEventListener('DOMContentLoaded', function() {
-    const leadForms = document.querySelectorAll('form[data-type="lead"]');
-    leadForms.forEach(form => {
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        await window.submitLeadForm(form);
-      });
-    });
-    
-    const paymentForms = document.querySelectorAll('form[data-type="payment"]');
-    paymentForms.forEach(form => {
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        await window.submitPaymentForm(form);
-      });
-    });
-    
-    const reviewForms = document.querySelectorAll('form[data-type="review"]');
-    reviewForms.forEach(form => {
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        await window.submitReviewForm(form);
-      });
-    });
-    
-    const quizForms = document.querySelectorAll('form[data-type="quiz"]');
-    quizForms.forEach(form => {
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        await window.submitQuizForm(form);
-      });
-    });
-    
-    const callButtons = document.querySelectorAll('[data-action="book-call"]');
-    callButtons.forEach(button => {
-      button.addEventListener('click', async () => {
-        const userData = {
-          name: button.getAttribute('data-name') || '',
-          phone: button.getAttribute('data-phone') || '',
-          business: button.getAttribute('data-business') || '',
-          hasSales: button.getAttribute('data-hasSales') || ''
-        };
-        await window.bookCall(userData);
-      });
-    });
-    
-    console.log('✅ Forms initialized');
+// ══════════════════════════════════════════════════════════
+//  GET /api/config  ← ГЛАВНОЕ ИСПРАВЛЕНИЕ
+//  Фронтенд делает fetch('/api/config') при загрузке страницы.
+//  Если этот эндпоинт не отвечает → _configLoaded остаётся false
+//  → submitQuiz() выходит раньше отправки (строка 1623 в HTML)
+// ══════════════════════════════════════════════════════════
+app.get('/api/config', (req, res) => {
+  res.json({
+    tg_bot_token:    TG_BOT_TOKEN,
+    tg_chat_id:      TG_CHAT_ID,
+    apps_script_url: APPS_SCRIPT_URL,
+    wa_number:       WA_NUMBER,
+    backend_url:     process.env.BACKEND_URL || 'https://diastargets-2.onrender.com/api/submit',
   });
-})();
+});
+
+
+// ══════════════════════════════════════════════════════════
+//  validatePayload
+// ══════════════════════════════════════════════════════════
+function validatePayload(payload) {
+  const type = payload && payload.type;
+
+  if (type === 'lead') {
+    const { name, phone, lang, source, utm } = payload;
+    if (!name  || !String(name).trim())  return { error: 'name required' };
+    if (String(name).trim().length > 60) return { error: 'name too long' };
+    if (!phone || !String(phone).trim()) return { error: 'phone required' };
+    if (String(phone).trim().length > 60) return { error: 'phone too long' };
+    return { value: { type, name: String(name).trim(), phone: String(phone).trim(), lang: lang||'', source: source||'', utm: utm||{}, text:'', plan:'', method:'', rating:null, business:'', budget:'', request:'', hasSales:'' } };
+  }
+
+  if (type === 'payment') {
+    const { name, phone, plan, method, lang, source, utm } = payload;
+    if (!name  || !String(name).trim())  return { error: 'name required' };
+    if (String(name).trim().length > 60) return { error: 'name too long' };
+    if (!phone || !String(phone).trim()) return { error: 'phone required' };
+    if (String(phone).trim().length > 60) return { error: 'phone too long' };
+    return { value: { type, name: String(name).trim(), phone: String(phone).trim(), plan: plan||'', method: method||'', lang: lang||'', source: source||'', utm: utm||{}, text:'', rating:null, business:'', budget:'', request:'', hasSales:'' } };
+  }
+
+  if (type === 'review') {
+    const { name, text, rating, lang } = payload;
+    if (!name || !String(name).trim()) return { error: 'name required' };
+    if (String(name).trim().length > 60) return { error: 'name too long' };
+    if (!text || !String(text).trim()) return { error: 'text required' };
+    if (String(text).trim().length > 2000) return { error: 'text too long' };
+    return { value: { type, name: String(name).trim(), text: String(text).trim(), rating: Number(rating)||5, lang: lang||'', phone:'', source:'', plan:'', method:'', utm:{}, business:'', budget:'', request:'', hasSales:'' } };
+  }
+
+  if (type === 'quiz') {
+    const { name, phone, business, city, budget, avgCheck, clientSource, mainProblem, hasSales, goal, appNum, request, lang, source, utm } = payload;
+    if (!name  || !String(name).trim())  return { error: 'name required' };
+    if (String(name).trim().length > 60) return { error: 'name too long' };
+    if (!phone || !String(phone).trim()) return { error: 'phone required' };
+    if (String(phone).trim().length > 60) return { error: 'phone too long' };
+    return {
+      value: {
+        type,
+        appNum:       appNum       ? String(appNum).trim()       : '',
+        name:         String(name).trim(),
+        phone:        String(phone).trim(),
+        business:     business     ? String(business).trim()     : '',
+        city:         city         ? String(city).trim()         : '',
+        budget:       budget       ? String(budget).trim()       : '',
+        avgCheck:     avgCheck     ? String(avgCheck).trim()     : '',
+        clientSource: clientSource ? String(clientSource).trim() : '',
+        mainProblem:  mainProblem  ? String(mainProblem).trim()  : '',
+        hasSales:     hasSales     ? String(hasSales).trim()     : '',
+        goal:         goal         ? String(goal).trim()         : '',
+        request:      request      ? String(request).trim()      : '',
+        lang:         lang         || '',
+        source:       source       || 'quiz',
+        utm:          utm          || {},
+        text:'', plan:'', method:'', rating:null,
+      }
+    };
+  }
+
+  return { error: 'Unsupported type' };
+}
+
+
+// ══════════════════════════════════════════════════════════
+//  buildTelegramMessage
+// ══════════════════════════════════════════════════════════
+function buildTelegramMessage(data) {
+  const now = new Date().toLocaleString('ru-RU', { timeZone: 'Asia/Almaty' });
+
+  if (data.type === 'quiz') {
+    return [
+      '📩 НОВАЯ ЗАЯВКА — КВИЗ', '',
+      `🔢 Номер: ${data.appNum       || '—'}`,
+      `👤 Имя: ${data.name           || '—'}`,
+      `📱 Контакт: ${data.phone      || '—'}`,
+      `🏢 Бизнес: ${data.business    || '—'}`,
+      `🌆 Город: ${data.city         || '—'}`,
+      `💰 Бюджет: ${data.budget      || '—'}`,
+      `💵 Средний чек: ${data.avgCheck    || '—'}`,
+      `📍 Источник клиентов: ${data.clientSource || '—'}`,
+      `⚠️ Главная проблема: ${data.mainProblem  || '—'}`,
+      `👥 Менеджер: ${data.hasSales  || '—'}`,
+      `🎯 Цель: ${data.goal          || '—'}`,
+      `🏷 Источник: ${data.source    || '—'}`,
+      `🌐 Язык: ${data.lang          || '—'}`,
+      `🕐 Время: ${now}`,
+    ].join('\n');
+  }
+
+  if (data.type === 'lead')    return `🔔 Новая заявка — Лид\n\n👤 ${data.name||'—'}\n📱 ${data.phone||'—'}\n🏷 ${data.source||'—'}\n🕐 ${now}`;
+  if (data.type === 'payment') return `💳 Новая оплата\n\n👤 ${data.name||'—'}\n📱 ${data.phone||'—'}\n🎯 ${data.plan||'—'}\n💳 ${data.method||'—'}\n🕐 ${now}`;
+  if (data.type === 'review')  return `⭐ Новый отзыв\n\n👤 ${data.name||'—'}\n💬 ${data.text||'—'}\n🌟 ${data.rating||5}/5\n🕐 ${now}`;
+
+  return `📋 Новое сообщение\n\n${JSON.stringify(data, null, 2)}`;
+}
+
+
+// ══════════════════════════════════════════════════════════
+//  sendTelegramMessage
+// ══════════════════════════════════════════════════════════
+async function sendTelegramMessage(text) {
+  if (!TG_BOT_TOKEN || !TG_BOT_TOKEN.trim() || TG_BOT_TOKEN.includes('ВАШ')) return;
+  await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: TG_CHAT_ID, text, parse_mode: 'HTML' }),
+  });
+}
+
+
+// ══════════════════════════════════════════════════════════
+//  POST /api/submit
+// ══════════════════════════════════════════════════════════
+app.post('/api/submit', async (req, res) => {
+  try {
+    const { value, error } = validatePayload(req.body);
+    if (error) return res.status(400).json({ ok: false, error });
+
+    await sendTelegramMessage(buildTelegramMessage(value));
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('Submit error:', err);
+    return res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
+
+// ══════════════════════════════════════════════════════════
+//  Запуск
+// ══════════════════════════════════════════════════════════
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
