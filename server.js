@@ -1,248 +1,244 @@
-// ══════════════════════════════════════════════════════════
-//  server.js  —  patched: добавлена поддержка type='quiz'
-//  Изменены только: validatePayload, buildTelegramMessage
-//  Всё остальное не тронуто.
-// ══════════════════════════════════════════════════════════
+// ============================================
+// frontend.js - ПОЛНОСТЬЮ ИСПРАВЛЕННЫЙ
+// ============================================
+(function() {
+  const BACKEND_BASE_URL = 'https://diastargets-2.onrender.com'; // ЗАМЕНИТЕ НА РЕАЛЬНЫЙ URL
+  
+  let currentBackendUrl = BACKEND_BASE_URL;
+  let configLoaded = false;
 
-const express    = require('express');
-const bodyParser = require('body-parser');
-const fetch      = require('node-fetch'); // или встроенный fetch в Node 18+
-
-const app = express();
-app.use(bodyParser.json());
-
-// ── Замени на свои ──
-const TG_BOT_TOKEN = process.env.TG_BOT_TOKEN || 'ВАШ_BOT_TOKEN';
-const TG_CHAT_ID   = process.env.TG_CHAT_ID   || 'ВАШ_CHAT_ID';
-// ────────────────────
-
-// ══════════════════════════════════════════════════════════
-//  validatePayload
-//  Возвращает { value } при успехе или { error } при ошибке
-// ══════════════════════════════════════════════════════════
-function validatePayload(payload) {
-  const type = payload && payload.type;
-
-  // ── LEAD ──────────────────────────────────────────────
-  if (type === 'lead') {
-    const { name, phone, lang, source, utm } = payload;
-    if (!name || String(name).trim().length === 0) return { error: 'name required' };
-    if (String(name).trim().length > 60)           return { error: 'name too long' };
-    if (!phone || String(phone).trim().length === 0) return { error: 'phone required' };
-    if (String(phone).trim().length > 60)           return { error: 'phone too long' };
-
-    return {
-      value: {
-        type,
-        name:     String(name).trim(),
-        phone:    String(phone).trim(),
-        lang:     lang     || '',
-        source:   source   || '',
-        utm:      utm      || {},
-        // поля, не используемые в lead — пустые для совместимости схемы
-        text: '', plan: '', method: '', rating: null,
-        business: '', budget: '', request: '', hasSales: '',
+  async function loadConfig() {
+    try {
+      const response = await fetch(`${BACKEND_BASE_URL}/api/config`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        const config = await response.json();
+        if (config.backend_url) {
+          currentBackendUrl = config.backend_url;
+        } else {
+          currentBackendUrl = BACKEND_BASE_URL;
+        }
+        configLoaded = true;
+        console.log('Config loaded:', currentBackendUrl);
+      } else {
+        currentBackendUrl = BACKEND_BASE_URL;
+        configLoaded = true;
+        console.log('Using fallback URL:', currentBackendUrl);
       }
-    };
-  }
-
-  // ── PAYMENT ───────────────────────────────────────────
-  if (type === 'payment') {
-    const { name, phone, plan, method, lang, source, utm } = payload;
-    if (!name || String(name).trim().length === 0)   return { error: 'name required' };
-    if (String(name).trim().length > 60)             return { error: 'name too long' };
-    if (!phone || String(phone).trim().length === 0) return { error: 'phone required' };
-    if (String(phone).trim().length > 60)            return { error: 'phone too long' };
-
-    return {
-      value: {
-        type,
-        name:   String(name).trim(),
-        phone:  String(phone).trim(),
-        plan:   plan   || '',
-        method: method || '',
-        lang:   lang   || '',
-        source: source || '',
-        utm:    utm    || {},
-        text: '', rating: null,
-        business: '', budget: '', request: '', hasSales: '',
-      }
-    };
-  }
-
-  // ── REVIEW ────────────────────────────────────────────
-  if (type === 'review') {
-    const { name, text, rating, lang } = payload;
-    if (!name || String(name).trim().length === 0) return { error: 'name required' };
-    if (String(name).trim().length > 60)           return { error: 'name too long' };
-    if (!text || String(text).trim().length === 0) return { error: 'text required' };
-    if (String(text).trim().length > 2000)         return { error: 'text too long' };
-
-    return {
-      value: {
-        type,
-        name:   String(name).trim(),
-        text:   String(text).trim(),
-        rating: Number(rating) || 5,
-        lang:   lang || '',
-        phone: '', source: '', plan: '', method: '', utm: {},
-        business: '', budget: '', request: '', hasSales: '',
-      }
-    };
-  }
-
-  // ── QUIZ ──────────────────────────────────────────────
-  // ✅ НОВАЯ ВЕТКА — добавлена для совместимости с новым фронтендом
-  if (type === 'quiz') {
-    const { name, phone, business, budget, request, hasSales, lang, source, utm } = payload;
-
-    if (!name || String(name).trim().length === 0)   return { error: 'name required' };
-    if (String(name).trim().length > 60)             return { error: 'name too long' };
-    if (!phone || String(phone).trim().length === 0) return { error: 'phone required' };
-    if (String(phone).trim().length > 60)            return { error: 'phone too long' };
-    if (business && String(business).length > 100)   return { error: 'business too long' };
-    if (budget   && String(budget).length   > 100)   return { error: 'budget too long' };
-    if (request  && String(request).length  > 1000)  return { error: 'request too long' };
-    if (hasSales && String(hasSales).length > 100)   return { error: 'hasSales too long' };
-
-    return {
-      value: {
-        type,
-        name:     String(name).trim(),
-        phone:    String(phone).trim(),
-        business: business ? String(business).trim() : '',
-        budget:   budget   ? String(budget).trim()   : '',
-        request:  request  ? String(request).trim()  : '',
-        hasSales: hasSales ? String(hasSales).trim() : '',
-        lang:     lang     || '',
-        source:   source   || 'квиз',
-        utm:      utm      || {},
-        // поля схемы, не используемые в quiz
-        text: '', plan: '', method: '', rating: null,
-      }
-    };
-  }
-
-  // ── Неизвестный тип ───────────────────────────────────
-  return { error: 'Unsupported type' };
-}
-
-
-// ══════════════════════════════════════════════════════════
-//  buildTelegramMessage
-//  Формирует текст сообщения для Telegram по типу заявки
-// ══════════════════════════════════════════════════════════
-function buildTelegramMessage(data) {
-  const now = new Date().toLocaleString('ru-RU', { timeZone: 'Asia/Almaty' });
-
-  // ── QUIZ ──────────────────────────────────────────────
-  // ✅ НОВАЯ ВЕТКА
-  if (data.type === 'quiz') {
-    return (
-      `📩 НОВАЯ ЗАЯВКА С САЙТА\n\n` +
-      `👤 Имя: ${data.name     || '—'}\n` +
-      `📱 Контакт: ${data.phone   || '—'}\n` +
-      `🏢 Бизнес: ${data.business || '—'}\n` +
-      `💰 Бюджет: ${data.budget   || '—'}\n` +
-      `📝 Запрос: ${data.request  || '—'}\n` +
-      `👥 Отдел продаж: ${data.hasSales || '—'}\n` +
-      `🏷 Источник: ${data.source  || '—'}\n` +
-      `🕐 Время: ${now}\n` +
-      `🌐 Язык: ${data.lang || '—'}`
-    );
-  }
-
-  // ── LEAD ──────────────────────────────────────────────
-  if (data.type === 'lead') {
-    return (
-      `🔔 Новая заявка — Лид\n\n` +
-      `👤 Имя: ${data.name  || '—'}\n` +
-      `📱 Телефон: ${data.phone || '—'}\n` +
-      `🏷 Источник: ${data.source || '—'}\n` +
-      `🕐 Время: ${now}\n` +
-      `🌐 Язык: ${data.lang || '—'}`
-    );
-  }
-
-  // ── PAYMENT ───────────────────────────────────────────
-  if (data.type === 'payment') {
-    return (
-      `💳 Новая оплата\n\n` +
-      `👤 Имя: ${data.name   || '—'}\n` +
-      `📱 Телефон: ${data.phone  || '—'}\n` +
-      `🎯 Тариф: ${data.plan   || '—'}\n` +
-      `💳 Способ: ${data.method || '—'}\n` +
-      `🏷 Источник: ${data.source || '—'}\n` +
-      `🕐 Время: ${now}\n` +
-      `🌐 Язык: ${data.lang || '—'}`
-    );
-  }
-
-  // ── REVIEW ────────────────────────────────────────────
-  if (data.type === 'review') {
-    return (
-      `⭐ Новый отзыв\n\n` +
-      `👤 Имя: ${data.name   || '—'}\n` +
-      `💬 Текст: ${data.text   || '—'}\n` +
-      `🌟 Рейтинг: ${data.rating || 5}/5\n` +
-      `🕐 Время: ${now}\n` +
-      `🌐 Язык: ${data.lang || '—'}`
-    );
-  }
-
-  // Fallback — на случай неизвестного типа
-  return `📋 Новое сообщение\n\n${JSON.stringify(data, null, 2)}`;
-}
-
-
-// ══════════════════════════════════════════════════════════
-//  sendTelegramMessage  —  вспомогательная функция
-// ══════════════════════════════════════════════════════════
-async function sendTelegramMessage(text) {
-  if (!TG_BOT_TOKEN || TG_BOT_TOKEN.includes('ВАШ')) return;
-  await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id:    TG_CHAT_ID,
-      text:       text,
-      parse_mode: 'HTML',
-    }),
-  });
-}
-
-
-// ══════════════════════════════════════════════════════════
-//  POST /api/submit  —  основной эндпоинт
-// ══════════════════════════════════════════════════════════
-app.post('/api/submit', async (req, res) => {
-  try {
-    const { value, error } = validatePayload(req.body);
-
-    if (error) {
-      return res.status(400).json({ ok: false, error });
+    } catch (error) {
+      console.error('Config load error, using fallback:', error);
+      currentBackendUrl = BACKEND_BASE_URL;
+      configLoaded = true;
     }
-
-    // Отправить в Telegram
-    const tgText = buildTelegramMessage(value);
-    await sendTelegramMessage(tgText);
-
-    // ── Если есть сохранение в Google Sheets / БД — вставь здесь ──
-    // await saveToSheets(value);
-    // await db.collection('leads').insertOne(value);
-    // ──────────────────────────────────────────────────────────────
-
-    return res.json({ ok: true });
-
-  } catch (err) {
-    console.error('Submit error:', err);
-    return res.status(500).json({ ok: false, error: 'Server error' });
   }
-});
 
+  async function submitForm(payload) {
+    if (!configLoaded) {
+      await loadConfig();
+    }
+    
+    try {
+      const response = await fetch(`${currentBackendUrl}/api/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok || !result.ok) {
+        throw new Error(result.error || 'Submit failed');
+      }
+      
+      return { success: true, data: result };
+    } catch (error) {
+      console.error('Submit error:', error);
+      return { success: false, error: error.message };
+    }
+  }
 
-// ══════════════════════════════════════════════════════════
-//  Запуск
-// ══════════════════════════════════════════════════════════
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  window.submitLeadForm = async function(formElement) {
+    const formData = new FormData(formElement);
+    const payload = {
+      type: 'lead',
+      name: formData.get('name'),
+      phone: formData.get('phone'),
+      source: formData.get('source') || 'сайт',
+      lang: formData.get('lang') || 'ru',
+      utm: {}
+    };
+    
+    const result = await submitForm(payload);
+    
+    if (result.success) {
+      alert('✅ Заявка отправлена! Мы свяжемся с вами.');
+      formElement.reset();
+    } else {
+      alert('❌ Ошибка: ' + result.error + '. Попробуйте позже.');
+    }
+    
+    return result.success;
+  };
+
+  window.submitPaymentForm = async function(formElement) {
+    const formData = new FormData(formElement);
+    const payload = {
+      type: 'payment',
+      name: formData.get('name'),
+      phone: formData.get('phone'),
+      plan: formData.get('plan'),
+      method: formData.get('method'),
+      source: formData.get('source') || 'сайт',
+      lang: formData.get('lang') || 'ru',
+      utm: {}
+    };
+    
+    const result = await submitForm(payload);
+    
+    if (result.success) {
+      alert('✅ Заявка на оплату принята!');
+      formElement.reset();
+    } else {
+      alert('❌ Ошибка: ' + result.error);
+    }
+    
+    return result.success;
+  };
+
+  window.submitReviewForm = async function(formElement) {
+    const formData = new FormData(formElement);
+    const payload = {
+      type: 'review',
+      name: formData.get('name'),
+      text: formData.get('text'),
+      rating: parseInt(formData.get('rating')) || 5,
+      lang: formData.get('lang') || 'ru'
+    };
+    
+    const result = await submitForm(payload);
+    
+    if (result.success) {
+      alert('✅ Спасибо за отзыв!');
+      formElement.reset();
+    } else {
+      alert('❌ Ошибка: ' + result.error);
+    }
+    
+    return result.success;
+  };
+
+  window.submitQuizForm = async function(formElement) {
+    const formData = new FormData(formElement);
+    const payload = {
+      type: 'quiz',
+      name: formData.get('name'),
+      phone: formData.get('phone'),
+      business: formData.get('business') || '',
+      budget: formData.get('budget') || '',
+      request: formData.get('request') || '',
+      hasSales: formData.get('hasSales') || '',
+      source: 'квиз',
+      lang: formData.get('lang') || 'ru',
+      utm: {}
+    };
+    
+    const result = await submitForm(payload);
+    
+    if (result.success) {
+      alert('✅ Заявка отправлена! Мы свяжемся с вами для консультации.');
+      formElement.reset();
+      
+      if (window.onQuizSuccess) {
+        window.onQuizSuccess();
+      }
+    } else {
+      alert('❌ Ошибка: ' + result.error);
+    }
+    
+    return result.success;
+  };
+
+  window.bookCall = async function(userData) {
+    if (!userData || !userData.name || !userData.phone) {
+      alert('❌ Пожалуйста, укажите имя и телефон');
+      return false;
+    }
+    
+    const payload = {
+      type: 'quiz',
+      name: userData.name,
+      phone: userData.phone,
+      business: userData.business || '',
+      budget: userData.budget || '',
+      request: 'Запись на созвон',
+      hasSales: userData.hasSales || '',
+      source: 'созвон',
+      lang: 'ru',
+      utm: {}
+    };
+    
+    const result = await submitForm(payload);
+    
+    if (result.success) {
+      alert('✅ Заявка на созвон отправлена! Мы свяжемся с вами в течение 15 минут.');
+      return true;
+    } else {
+      alert('❌ Ошибка: ' + result.error + '. Пожалуйста, попробуйте еще раз или свяжитесь с нами по телефону.');
+      return false;
+    }
+  };
+
+  loadConfig();
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    const leadForms = document.querySelectorAll('form[data-type="lead"]');
+    leadForms.forEach(form => {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await window.submitLeadForm(form);
+      });
+    });
+    
+    const paymentForms = document.querySelectorAll('form[data-type="payment"]');
+    paymentForms.forEach(form => {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await window.submitPaymentForm(form);
+      });
+    });
+    
+    const reviewForms = document.querySelectorAll('form[data-type="review"]');
+    reviewForms.forEach(form => {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await window.submitReviewForm(form);
+      });
+    });
+    
+    const quizForms = document.querySelectorAll('form[data-type="quiz"]');
+    quizForms.forEach(form => {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await window.submitQuizForm(form);
+      });
+    });
+    
+    const callButtons = document.querySelectorAll('[data-action="book-call"]');
+    callButtons.forEach(button => {
+      button.addEventListener('click', async () => {
+        const userData = {
+          name: button.getAttribute('data-name') || '',
+          phone: button.getAttribute('data-phone') || '',
+          business: button.getAttribute('data-business') || '',
+          hasSales: button.getAttribute('data-hasSales') || ''
+        };
+        await window.bookCall(userData);
+      });
+    });
+    
+    console.log('✅ Forms initialized');
+  });
+})();
