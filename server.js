@@ -190,6 +190,26 @@
       return false;
     }
   };
+  window.openQuiz = function () {
+  const modal = document.getElementById('quiz-modal');
+
+  if (modal) {
+    modal.classList.add('open');
+    return;
+  }
+
+  const quizBlock =
+    document.getElementById('quiz') ||
+    document.querySelector('.quiz-wrap') ||
+    document.querySelector('form[data-type="quiz"]');
+
+  if (quizBlock) {
+    quizBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+
+  alert('Квиз не найден');
+};
 
   loadConfig();
   
