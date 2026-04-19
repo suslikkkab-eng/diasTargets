@@ -1066,7 +1066,7 @@ var lang = 'ru';
 // ── Все чувствительные ключи хранятся на бэкенде. ──
 // Сайт загружает их один раз при старте через /api/config.
 // В коде фронтенда никаких токенов / URL нет.
-var WA_NUMBER     = '';
+var WA_NUMBER     = '77754398561';
 var TG_BOT_TOKEN  = '';
 var TG_CHAT_ID    = '';
 var APPS_SCRIPT_URL = '';
@@ -1311,12 +1311,25 @@ function restoreStateOnLoad(){
   var elapsed = Math.floor((now - s.submittedAt) / 1000); // сколько секунд прошло
   var TOTAL = 86400; // 24 часа
 
+  function scrollToQuiz(){
+    setTimeout(function(){
+      var el = document.getElementById('quiz');
+      if(!el) return;
+      var stickyH = ((document.querySelector('.lang-bar')||{offsetHeight:0}).offsetHeight)
+                  + ((document.getElementById('snav')||{offsetHeight:0}).offsetHeight);
+      var top = el.getBoundingClientRect().top + window.pageYOffset - stickyH - 10;
+      window.scrollTo({top: Math.max(0, top), behavior: 'smooth'});
+    }, 300);
+  }
+
   if(s.status === 'approved'){
     showApproved(s.phone, s.name, s.appNum||'');
+    scrollToQuiz();
     return;
   }
   if(s.status === 'rejected'){
     showRejected();
+    scrollToQuiz();
     return;
   }
   // Всё ещё pending
@@ -1328,9 +1341,17 @@ function restoreStateOnLoad(){
     setLang(lang);
     submittedPhone = s.phone || '';
     startTimer(elapsed); // передаём уже прошедшее время
-    startStatusPolling(s.phone, s.name);
+    // Запускаем polling с задержкой — ждём пока загрузится конфиг (APPS_SCRIPT_URL)
+    var pollDelay = 0;
+    if(!_configLoaded){
+      pollDelay = 3000; // ждём 3 сек пока /api/config ответит
+    }
+    setTimeout(function(){
+      startStatusPolling(s.phone, s.name);
+    }, pollDelay);
+    scrollToQuiz();
   } else {
-    // Час прошёл — сброс
+    // 24 часа прошли — сброс
     clearState();
   }
 }
@@ -1407,9 +1428,9 @@ function startStatusPolling(phone, name){
   if(!phone) return;
   clearInterval(statusPollInterval);
 
-  statusPollInterval = setInterval(async function(){
+  // ── Общая функция проверки ──
+  async function checkStatus(){
     try{
-      // Проверяем статус напрямую через Apps Script
       var statusUrl = APPS_SCRIPT_URL + '?phone=' + encodeURIComponent(phone) + '&t=' + Date.now();
       var res = await fetch(statusUrl, { method:'GET' });
       var data = {};
@@ -1429,7 +1450,13 @@ function startStatusPolling(phone, name){
         showRejected();
       }
     }catch(e){}
-  }, 20000);
+  }
+
+  // Сразу при заходе — пользователь мог пропустить одобрение пока был оффлайн
+  checkStatus();
+
+  // Затем каждые 20 секунд пока сайт открыт
+  statusPollInterval = setInterval(checkStatus, 20000);
 }
 
 // ── Отозвать заявку ──
@@ -1832,20 +1859,6 @@ setLang('ru');
 
 // ══ ВОССТАНОВЛЕНИЕ СОСТОЯНИЯ ПОСЛЕ ПЕРЕЗАГРУЗКИ ══
 restoreStateOnLoad();
-function openQuiz(){
-  var el = document.getElementById('quiz');
-  if(!el){
-    alert('Квиз не найден');
-    return;
-  }
-
-  var offset = el.getBoundingClientRect().top + window.pageYOffset;
-
-  window.scrollTo({
-    top: offset - 20,
-    behavior: 'smooth'
-  });
-}
 </script>
 </body>
 </html>
