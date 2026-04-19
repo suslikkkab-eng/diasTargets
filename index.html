@@ -1076,20 +1076,23 @@ var BACKEND_URL   = 'https://diastargets-2.onrender.com';
 var _configLoaded = false;
 
 (function loadConfig(){
-  // Запрашиваем конфиг с нашего бэкенда (относительный URL — работает на любом домене)
-  fetch('/api/config')
-    .then(function(r){ return r.json(); })
+  fetch(BACKEND_URL + '/api/config')
+    .then(function(r){
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
     .then(function(cfg){
       WA_NUMBER       = cfg.wa_number       || '';
-      TG_BOT_TOKEN    = cfg.tg_bot_token    || '';
-      TG_CHAT_ID      = cfg.tg_chat_id      || '';
       APPS_SCRIPT_URL = cfg.apps_script_url || '';
-      BACKEND_URL     = cfg.backend_url     || '';
       _configLoaded   = true;
     })
     .catch(function(err){
       console.warn('[config] Не удалось загрузить конфиг:', err);
-      // Сайт продолжит работу, но отправка заявок будет недоступна
+      var stMsg = document.getElementById('quiz-status-msg');
+      if(stMsg){
+        stMsg.className = 'form-status-msg err show';
+        stMsg.innerHTML = '❌ Не удалось подключиться к серверу';
+      }
     });
 }());
 
@@ -1619,6 +1622,22 @@ async function submitQuiz(){
   quizData[10] = contactStr;
   submittedPhone = p || s;
 
+  // Проверяем, что конфиг с бэкенда успел загрузиться
+if(!_configLoaded){
+  var stMsg = document.getElementById('quiz-status-msg');
+  if(stMsg){
+    stMsg.className='form-status-msg warn show';
+    stMsg.innerHTML='⏳ ' + (lang==='ru'
+      ? 'Идёт инициализация, откройте сайт через сервер, а не как файл.'
+      : 'Инициализация жүріп жатыр, сайтты файл емес, сервер арқылы ашыңыз.');
+    setTimeout(function(){
+      stMsg.className='form-status-msg';
+      stMsg.innerHTML='';
+    }, 5000);
+  }
+  return;
+}
+
   btn.textContent=lang==='ru'?'Отправка...':'Жіберілуде...';
   btn.disabled=true;
 
@@ -1661,7 +1680,7 @@ async function submitQuiz(){
   }
   if(BACKEND_URL && BACKEND_URL.indexOf('YOUR') === -1){
     sends.push(
-      fetch(BACKEND_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)})
+      fetch(BACKEND_URL + '/api/submit', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)})
         .then(function(r){ if(r.ok) sendOk = true; }).catch(function(){})
     );
   }
