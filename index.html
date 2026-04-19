@@ -1447,7 +1447,7 @@ async function revokeQuiz(){
   if (btn){ btn.disabled = true; btn.textContent = lang==='ru' ? 'Отзываем...' : 'Кері қайтарылуда...'; }
 
   // Сообщаем Apps Script об отзыве — удалит строку из таблицы
-  var revokePayload = { secret: 'dias_secure_83921_kz_2026', type: 'revoke', phone: phone, name: name };
+  var revokePayload = { secret: '', type: 'revoke', phone: phone, name: name };
   try {
     await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
@@ -1462,7 +1462,7 @@ async function revokeQuiz(){
     await fetch(revokeUrl, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ phone: phone, name: name, secret: 'dias_secure_83921_kz_2026' })
+      body: JSON.stringify({ phone: phone, name: name, secret: '' })
     });
   } catch(e) { console.log('revoke server error (ok):', e); }
 
@@ -1642,7 +1642,6 @@ if(!_configLoaded){
              + '-' + String(Math.floor(1000+Math.random()*9000));
 
   var payload={
-    secret:'dias_secure_83921_kz_2026',
     type:'quiz',
     appNum:     appNum,
     business:   quizData[1] || '',
