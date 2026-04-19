@@ -1,20 +1,44 @@
 // ══════════════════════════════════════════════════════════
-//  server.js  —  patched: добавлена поддержка type='quiz'
-//  Изменены только: validatePayload, buildTelegramMessage
-//  Всё остальное не тронуто.
+//  server.js  —  Render-ready
+//  CommonJS (require), CORS, /api/config, /api/submit
 // ══════════════════════════════════════════════════════════
 
 const express    = require('express');
 const bodyParser = require('body-parser');
-const fetch      = require('node-fetch'); // или встроенный fetch в Node 18+
+const fetch      = require('node-fetch');
+const cors       = require('cors');
 
 const app = express();
+
+// ── CORS — разрешаем фронтенд и локальную разработку ──
+app.use(cors({
+  origin: [
+    'https://suslikkkab-eng.github.io',
+    'http://localhost:5500',
+    'http://127.0.0.1:5500',
+  ],
+}));
+
 app.use(bodyParser.json());
 
-// ── Замени на свои ──
-const TG_BOT_TOKEN = process.env.TG_BOT_TOKEN || 'ВАШ_BOT_TOKEN';
-const TG_CHAT_ID   = process.env.TG_CHAT_ID   || 'ВАШ_CHAT_ID';
-// ────────────────────
+// ── Токены только из env-переменных, никогда не в коде ──
+const TG_BOT_TOKEN = process.env.TG_BOT_TOKEN || '';
+const TG_CHAT_ID   = process.env.TG_CHAT_ID   || '';
+
+
+// ══════════════════════════════════════════════════════════
+//  GET /api/config  —  отдаёт фронтенду публичные настройки
+//  TG_BOT_TOKEN и TG_CHAT_ID НЕ передаются фронтенду —
+//  они используются только на сервере.
+// ══════════════════════════════════════════════════════════
+app.get('/api/config', (req, res) => {
+  res.json({
+    wa_number:       process.env.WA_NUMBER       || '',
+    apps_script_url: process.env.APPS_SCRIPT_URL || '',
+    backend_url:     process.env.BACKEND_URL     || '',
+  });
+});
+
 
 // ══════════════════════════════════════════════════════════
 //  validatePayload
@@ -26,20 +50,19 @@ function validatePayload(payload) {
   // ── LEAD ──────────────────────────────────────────────
   if (type === 'lead') {
     const { name, phone, lang, source, utm } = payload;
-    if (!name || String(name).trim().length === 0) return { error: 'name required' };
-    if (String(name).trim().length > 60)           return { error: 'name too long' };
+    if (!name || String(name).trim().length === 0)   return { error: 'name required' };
+    if (String(name).trim().length > 60)             return { error: 'name too long' };
     if (!phone || String(phone).trim().length === 0) return { error: 'phone required' };
-    if (String(phone).trim().length > 60)           return { error: 'phone too long' };
+    if (String(phone).trim().length > 60)            return { error: 'phone too long' };
 
     return {
       value: {
         type,
         name:     String(name).trim(),
         phone:    String(phone).trim(),
-        lang:     lang     || '',
-        source:   source   || '',
-        utm:      utm      || {},
-        // поля, не используемые в lead — пустые для совместимости схемы
+        lang:     lang   || '',
+        source:   source || '',
+        utm:      utm    || {},
         text: '', plan: '', method: '', rating: null,
         business: '', budget: '', request: '', hasSales: '',
       }
@@ -92,7 +115,6 @@ function validatePayload(payload) {
   }
 
   // ── QUIZ ──────────────────────────────────────────────
-  // ✅ НОВАЯ ВЕТКА — добавлена для совместимости с новым фронтендом
   if (type === 'quiz') {
     const { name, phone, business, budget, request, hasSales, lang, source, utm } = payload;
 
@@ -117,7 +139,6 @@ function validatePayload(payload) {
         lang:     lang     || '',
         source:   source   || 'квиз',
         utm:      utm      || {},
-        // поля схемы, не используемые в quiz
         text: '', plan: '', method: '', rating: null,
       }
     };
@@ -130,41 +151,36 @@ function validatePayload(payload) {
 
 // ══════════════════════════════════════════════════════════
 //  buildTelegramMessage
-//  Формирует текст сообщения для Telegram по типу заявки
 // ══════════════════════════════════════════════════════════
 function buildTelegramMessage(data) {
   const now = new Date().toLocaleString('ru-RU', { timeZone: 'Asia/Almaty' });
 
-  // ── QUIZ ──────────────────────────────────────────────
-  // ✅ НОВАЯ ВЕТКА
   if (data.type === 'quiz') {
     return (
       `📩 НОВАЯ ЗАЯВКА С САЙТА\n\n` +
-      `👤 Имя: ${data.name     || '—'}\n` +
-      `📱 Контакт: ${data.phone   || '—'}\n` +
-      `🏢 Бизнес: ${data.business || '—'}\n` +
-      `💰 Бюджет: ${data.budget   || '—'}\n` +
-      `📝 Запрос: ${data.request  || '—'}\n` +
+      `👤 Имя: ${data.name      || '—'}\n` +
+      `📱 Контакт: ${data.phone    || '—'}\n` +
+      `🏢 Бизнес: ${data.business  || '—'}\n` +
+      `💰 Бюджет: ${data.budget    || '—'}\n` +
+      `📝 Запрос: ${data.request   || '—'}\n` +
       `👥 Отдел продаж: ${data.hasSales || '—'}\n` +
-      `🏷 Источник: ${data.source  || '—'}\n` +
+      `🏷 Источник: ${data.source   || '—'}\n` +
       `🕐 Время: ${now}\n` +
       `🌐 Язык: ${data.lang || '—'}`
     );
   }
 
-  // ── LEAD ──────────────────────────────────────────────
   if (data.type === 'lead') {
     return (
       `🔔 Новая заявка — Лид\n\n` +
-      `👤 Имя: ${data.name  || '—'}\n` +
-      `📱 Телефон: ${data.phone || '—'}\n` +
+      `👤 Имя: ${data.name   || '—'}\n` +
+      `📱 Телефон: ${data.phone  || '—'}\n` +
       `🏷 Источник: ${data.source || '—'}\n` +
       `🕐 Время: ${now}\n` +
       `🌐 Язык: ${data.lang || '—'}`
     );
   }
 
-  // ── PAYMENT ───────────────────────────────────────────
   if (data.type === 'payment') {
     return (
       `💳 Новая оплата\n\n` +
@@ -178,7 +194,6 @@ function buildTelegramMessage(data) {
     );
   }
 
-  // ── REVIEW ────────────────────────────────────────────
   if (data.type === 'review') {
     return (
       `⭐ Новый отзыв\n\n` +
@@ -190,16 +205,15 @@ function buildTelegramMessage(data) {
     );
   }
 
-  // Fallback — на случай неизвестного типа
   return `📋 Новое сообщение\n\n${JSON.stringify(data, null, 2)}`;
 }
 
 
 // ══════════════════════════════════════════════════════════
-//  sendTelegramMessage  —  вспомогательная функция
+//  sendTelegramMessage
 // ══════════════════════════════════════════════════════════
 async function sendTelegramMessage(text) {
-  if (!TG_BOT_TOKEN || TG_BOT_TOKEN.includes('ВАШ')) return;
+  if (!TG_BOT_TOKEN) return;
   await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -213,23 +227,7 @@ async function sendTelegramMessage(text) {
 
 
 // ══════════════════════════════════════════════════════════
-//  GET /api/config  —  отдаёт фронтенду чувствительные ключи
-//  Фронтенд запрашивает этот маршрут при загрузке страницы.
-//  Без него квиз не сможет отправлять заявки.
-// ══════════════════════════════════════════════════════════
-app.get('/api/config', (req, res) => {
-  res.json({
-    wa_number:       process.env.WA_NUMBER       || '',
-    tg_bot_token:    process.env.TG_BOT_TOKEN    || TG_BOT_TOKEN,
-    tg_chat_id:      process.env.TG_CHAT_ID      || TG_CHAT_ID,
-    apps_script_url: process.env.APPS_SCRIPT_URL || '',
-    backend_url:     process.env.BACKEND_URL     || '',
-  });
-});
-
-
-// ══════════════════════════════════════════════════════════
-//  POST /api/submit  —  основной эндпоинт
+//  POST /api/submit
 // ══════════════════════════════════════════════════════════
 app.post('/api/submit', async (req, res) => {
   try {
@@ -239,14 +237,13 @@ app.post('/api/submit', async (req, res) => {
       return res.status(400).json({ ok: false, error });
     }
 
-    // Отправить в Telegram
     const tgText = buildTelegramMessage(value);
     await sendTelegramMessage(tgText);
 
-    // ── Если есть сохранение в Google Sheets / БД — вставь здесь ──
+    // ── Сохранение в Google Sheets / БД — вставь здесь ──
     // await saveToSheets(value);
     // await db.collection('leads').insertOne(value);
-    // ──────────────────────────────────────────────────────────────
+    // ────────────────────────────────────────────────────
 
     return res.json({ ok: true });
 
