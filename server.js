@@ -46,8 +46,8 @@ app.use(bodyParser.json({ limit: '50kb' }));
 app.use(bodyParser.urlencoded({ extended: false }));
 
 // ── Токены только из env-переменных ──
-const TG_BOT_TOKEN   = process.env.TG_BOT_TOKEN   || '';
-const TG_CHAT_ID     = process.env.TG_CHAT_ID     || '';
+const TG_BOT_TOKEN    = process.env.TG_BOT_TOKEN    || '';
+const TG_CHAT_ID      = process.env.TG_CHAT_ID      || '';
 const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_URL || '';
 
 
@@ -279,17 +279,30 @@ async function sendTelegramMessage(text) {
 //  sendToAppsScript — сохраняет в Google Sheets
 // ══════════════════════════════════════════════════════════
 async function sendToAppsScript(data) {
-  if (!APPS_SCRIPT_URL) return;
+  if (!APPS_SCRIPT_URL) {
+    console.warn('Apps Script: APPS_SCRIPT_URL not set, skipping.');
+    return;
+  }
+
+  const payload = {
+    ...data,
+    secret: process.env.APPS_SCRIPT_SECRET || '',
+  };
+
   try {
     const res = await fetch(APPS_SCRIPT_URL, {
-      method:  'POST',
-      headers: { 'Content-Type': 'text/plain' }, // text/plain — обходит preflight CORS
-      body:    JSON.stringify(data),
+      method:   'POST',
+      headers:  { 'Content-Type': 'text/plain' }, // text/plain — обходит preflight CORS
+      body:     JSON.stringify(payload),
       redirect: 'follow',
     });
+
+    const text = await res.text();
+    console.log('Apps Script response status:', res.status);
+    console.log('Apps Script response body:  ', text);
+
     if (!res.ok) {
-      const err = await res.text();
-      console.error('Apps Script error:', err);
+      console.error('Apps Script error: HTTP', res.status, text);
     }
   } catch (e) {
     console.error('Apps Script fetch error:', e.message);
@@ -365,8 +378,9 @@ app.get('/health', (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
-  console.log(`   TG_BOT_TOKEN:    ${TG_BOT_TOKEN    ? '✓ set' : '✗ missing'}`);
-  console.log(`   TG_CHAT_ID:      ${TG_CHAT_ID      ? '✓ set' : '✗ missing'}`);
-  console.log(`   APPS_SCRIPT_URL: ${APPS_SCRIPT_URL ? '✓ set' : '✗ missing'}`);
-  console.log(`   WA_NUMBER:       ${process.env.WA_NUMBER ? '✓ set' : '✗ missing'}`);
+  console.log(`   TG_BOT_TOKEN:       ${TG_BOT_TOKEN       ? '✓ set' : '✗ missing'}`);
+  console.log(`   TG_CHAT_ID:         ${TG_CHAT_ID         ? '✓ set' : '✗ missing'}`);
+  console.log(`   APPS_SCRIPT_URL:    ${APPS_SCRIPT_URL    ? '✓ set' : '✗ missing'}`);
+  console.log(`   APPS_SCRIPT_SECRET: ${process.env.APPS_SCRIPT_SECRET ? '✓ set' : '✗ missing'}`);
+  console.log(`   WA_NUMBER:          ${process.env.WA_NUMBER          ? '✓ set' : '✗ missing'}`);
 });
