@@ -1063,35 +1063,47 @@ footer{border-top:1px solid var(--brd);padding:36px 20px;text-align:center;color
 // ══ CONFIG ══
 var lang = 'ru';
 
-// ── Все чувствительные ключи хранятся на бэкенде. ──
-// Сайт загружает их один раз при старте через /api/config.
-// В коде фронтенда никаких токенов / URL нет.
-var WA_NUMBER     = '';
-var TG_BOT_TOKEN  = '';
-var TG_CHAT_ID    = '';
+// ── Адрес backend фиксирован здесь. Токены остаются только на сервере. ──
+var WA_NUMBER       = '';
+var TG_BOT_TOKEN    = ''; // не используется на фронте
+var TG_CHAT_ID      = ''; // не используется на фронте
 var APPS_SCRIPT_URL = '';
-var BACKEND_URL   = 'https://diastargets-2.onrender.com';
+var BACKEND_URL     = 'https://diastargets-2.onrender.com';
 
 // Флаг: конфиг загружен и сайт готов отправлять заявки
 var _configLoaded = false;
 
 (function loadConfig(){
-  // Запрашиваем конфиг с нашего бэкенда (относительный URL — работает на любом домене)
-  fetch('/api/config')
-    .then(function(r){ return r.json(); })
+  // Используем абсолютный URL бэкенда — фронт и бэкенд на разных доменах
+  fetch(BACKEND_URL + '/api/config')
+    .then(function(r){
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
     .then(function(cfg){
       WA_NUMBER       = cfg.wa_number       || '';
-      TG_BOT_TOKEN    = cfg.tg_bot_token    || '';
-      TG_CHAT_ID      = cfg.tg_chat_id      || '';
       APPS_SCRIPT_URL = cfg.apps_script_url || '';
-      BACKEND_URL     = cfg.backend_url     || '';
+      // TG_BOT_TOKEN и TG_CHAT_ID не запрашиваем — они остаются только на сервере
       _configLoaded   = true;
     })
     .catch(function(err){
-      console.warn('[config] Не удалось загрузить конфиг:', err);
-      // Сайт продолжит работу, но отправка заявок будет недоступна
+      console.error('[config] Не удалось загрузить /api/config:', err);
+      _showConfigError();
     });
 }());
+
+function _showConfigError(){
+  setTimeout(function(){
+    var el = document.getElementById('quiz-status-msg');
+    if(!el) return;
+    el.className = 'form-status-msg warn show';
+    el.innerHTML = '⚠️ ' + (
+      (typeof lang !== 'undefined' && lang === 'kz')
+        ? 'Серверге қосылу мүмкін болмады. BACKEND_URL және /api/config тексеріңіз.'
+        : 'Не удалось подключиться к серверу. Проверьте BACKEND_URL и /api/config.'
+    );
+  }, 300);
+}
 
 // ══ LOCALSTORAGE КЛЮЧИ ══
 var LS_KEY = 'dias_quiz_state_v3';
