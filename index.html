@@ -1088,11 +1088,6 @@ var _configLoaded = false;
     })
     .catch(function(err){
       console.warn('[config] Не удалось загрузить конфиг:', err);
-      var stMsg = document.getElementById('quiz-status-msg');
-      if(stMsg){
-        stMsg.className = 'form-status-msg err show';
-        stMsg.innerHTML = '❌ Не удалось подключиться к серверу';
-      }
     });
 }());
 
@@ -1462,7 +1457,7 @@ async function revokeQuiz(){
   } catch(e) { console.log('revoke apps script error (ok):', e); }
 
   // Также сообщаем Render (запасной)
-  var revokeUrl = BACKEND_URL.replace('/api/submit','/api/revoke');
+  var revokeUrl = BACKEND_URL + '/api/revoke';
   try {
     await fetch(revokeUrl, {
       method: 'POST',
